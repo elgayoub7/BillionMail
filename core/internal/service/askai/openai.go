@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
+	"net/url"
 	"os"
 	"reflect"
 	"strconv"
@@ -173,7 +175,45 @@ func (o *OpenAI) RegisterWebSearchTool() openai.Tool {
 	}
 }
 
+// isUrlSafe checks if a URL is safe to request (prevents SSRF attacks).
+func isUrlSafe(rawUrl string) bool {
+	parsed, err := url.Parse(rawUrl)
+	if err != nil {
+		return false
+	}
+
+	// Only allow http and https schemes
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		return false
+	}
+
+	host := parsed.Hostname()
+
+	// Block private/internal IP ranges and localhost
+	ip := net.ParseIP(host)
+	if ip != nil {
+		if ip.IsLoopback() || ip.IsPrivate() || ip.IsUnspecified() || ip.IsLinkLocalLocal() {
+			return false
+		}
+	}
+
+	// Block common internal hostnames
+	internalHosts := []string{"localhost", "127.0.0.1", "0.0.0.0", "::1", "metadata.google.internal", "169.254.169.254"}
+	for _, h := range internalHosts {
+		if host == h {
+			return false
+		}
+	}
+
+	return true
+}
+
 func (o *OpenAI) HttpRequestTool(url string) string {
+	// SECURITY FIX: Validate URL to prevent SSRF attacks
+	if !isUrlSafe(url) {
+		return "Error: URL not allowed for security reasons"
+	}
+
 	urlKey := public.Md5(url)
 	cachePath := CHAT_CONFIG_PATH + "/" + o.ChatId + "/temp"
 	cacheFile := cachePath + "/" + urlKey

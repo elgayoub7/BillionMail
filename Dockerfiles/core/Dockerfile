@@ -6,6 +6,8 @@ LABEL maintainer="https://github.com/aaPanel/BillionMail"
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 
+# SECURITY FIX: Create non-root user for running services
+RUN addgroup -S billionmail && adduser -S billionmail -G billionmail
 
 # Platform-specific binary copy
 ARG TARGETARCH
@@ -43,6 +45,8 @@ RUN apk add --no-cache \
 COPY supervisord.conf /etc/supervisor/supervisord.conf
 COPY fail2ban.conf /etc/fail2ban/fail2ban.conf
 
+# SECURITY FIX: Set proper ownership for non-root user
+RUN chown -R billionmail:billionmail /opt/billionmail /stop-supervisor.sh /core.sh /restart_fail2ban.sh
 
 ENTRYPOINT ["/core.sh"]
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]

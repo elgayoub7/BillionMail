@@ -11,6 +11,9 @@ English | [简体中文](README-zh_CN.md) | [日本語](README-ja.md) | [Türkç
 </div>
 <br/>
 
+> **Security-Hardened Fork** — This fork includes 9 critical security fixes (JWT, TLS, container hardening, SSRF prevention). See [SECURITY.md](SECURITY.md) for details and [MIGRATION.md](MIGRATION.md) for upgrade instructions.
+<br/>
+
 <div align="center">
 <a href="https://trendshift.io/repositories/13842" target="_blank"><img src="https://trendshift.io/api/badge/repositories/13842" alt="aaPanel%2FBillionMail | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
 </div>

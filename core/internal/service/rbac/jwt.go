@@ -34,14 +34,23 @@ type JWTService struct {
 
 // newJWTService creates a new JWTService instance
 func newJWTService() *JWTService {
+	// SECURITY FIX: Use a dedicated JWT secret from env, not derived from DB/Redis passwords.
+	// Falls back to DBPASS+REDISPASS only if JWT_SECRET is not set (backward compat).
 	defaultJwtSecret := ""
 
-	if dbpass, err := public.DockerEnv("DBPASS"); err == nil {
-		defaultJwtSecret += dbpass
+	if jwtSecret, err := public.DockerEnv("JWT_SECRET"); err == nil && jwtSecret != "" {
+		defaultJwtSecret = jwtSecret
 	}
 
-	if redispass, err := public.DockerEnv("REDISPASS"); err == nil {
-		defaultJwtSecret += redispass
+	if defaultJwtSecret == "" {
+		// Backward-compatible fallback (remove after migration)
+		if dbpass, err := public.DockerEnv("DBPASS"); err == nil {
+			defaultJwtSecret += dbpass
+		}
+		if redispass, err := public.DockerEnv("REDISPASS"); err == nil {
+			defaultJwtSecret += redispass
+		}
+		g.Log().Warning(context.Background(), "JWT_SECRET not set, falling back to DBPASS+REDISPASS. Set JWT_SECRET in .env for security.")
 	}
 
 	if defaultJwtSecret == "" {
@@ -108,13 +117,18 @@ func (s *JWTService) GenerateRefreshToken(accountId int64, username string) (str
 
 // GenerateApiToken generates a JWT token for API access
 func (s *JWTService) GenerateApiToken(accountId int64, username string, roles []string) (string, int64, error) {
+	// SECURITY FIX: API tokens now expire after 365 days instead of never.
+	// Rotate tokens annually for security.
+	apiExpiry := time.Duration(g.Cfg().MustGet(context.Background(), "jwt.apiExpiry", 86400*365).Int()) * time.Second
+	expiryTime := time.Now().Add(apiExpiry)
+
 	claims := &JWTCustomClaims{
 		AccountId: accountId,
 		Username:  username,
 		Roles:     roles,
 		ApiToken:  true,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: nil,
+			ExpiresAt: jwt.NewNumericDate(expiryTime),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
 			Issuer:    consts.DEFAULT_SERVER_NAME,

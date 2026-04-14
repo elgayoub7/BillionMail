@@ -1041,7 +1041,7 @@ if [ -f "/var/lib/rspamd/dkim/${BILLIONMAIL_HOSTNAME}/default.private" ] && [ -f
     exit 0
 fi
 
-rspamadm dkim_keygen -s 'default' -b 1024 -d {domain} -k "/var/lib/rspamd/dkim/${BILLIONMAIL_HOSTNAME}/default.private" > "/var/lib/rspamd/dkim/${BILLIONMAIL_HOSTNAME}/default.pub"
+rspamadm dkim_keygen -s 'default' -b 2048 -d {domain} -k "/var/lib/rspamd/dkim/${BILLIONMAIL_HOSTNAME}/default.private" > "/var/lib/rspamd/dkim/${BILLIONMAIL_HOSTNAME}/default.pub"
 if [ $? -eq 0 ]; then
     # Define the root directory for private keys
     DKIM_KEYS_DIR="/var/lib/rspamd/dkim"

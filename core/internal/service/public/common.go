@@ -272,14 +272,28 @@ func ReturnDefault(data interface{}) api_v1.StandardRes {
 	return api_v1.StandardRes{Success: false, Code: 200, Msg: "ok", Data: data}
 }
 
-// Get HTTP client object
+// GetHttpClient returns an HTTP client with secure TLS verification.
 func GetHttpClient(timeout int) *http.Client {
 	tr := &http.Transport{
-		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true}, // Skip certificate verification
-		DisableKeepAlives: true,                                  // Disable connection pooling
+		TLSClientConfig:   &tls.Config{MinVersion: tls.VersionTLS12}, // Enforce TLS 1.2+
+		DisableKeepAlives: true,                                      // Disable connection pooling
 	}
 	HttpClient := &http.Client{
 		Timeout:   time.Duration(timeout) * time.Second, // Set timeout
+		Transport: tr,
+	}
+	return HttpClient
+}
+
+// GetInsecureHttpClient returns an HTTP client that skips TLS verification.
+// Only use for internal/trusted connections where certificates may be self-signed.
+func GetInsecureHttpClient(timeout int) *http.Client {
+	tr := &http.Transport{
+		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true},
+		DisableKeepAlives: true,
+	}
+	HttpClient := &http.Client{
+		Timeout:   time.Duration(timeout) * time.Second,
 		Transport: tr,
 	}
 	return HttpClient
