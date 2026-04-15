@@ -216,6 +216,7 @@ import {
 	removeSignCode,
 	getContentFromTitleTags,
 } from './controller'
+import { sanitizeHtml } from '@/utils'
 import MarkdownRender from './components/MarkdownRender.vue'
 import { useTemplateStore } from './store'
 import { TemplateStore } from './dto'
@@ -271,7 +272,10 @@ initialTemplateInfo(store)
  */
 function handleCodeRender(data: { code: string; key: string }) {
 	if (data.key == currentChatRecordKey.value) {
-		previewCode.value = removeSignCode(removeHtmlCodeBlockMarkers(data.code))
+		previewCode.value = sanitizeHtml(removeSignCode(removeHtmlCodeBlockMarkers(data.code)), {
+			ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'br', 'div', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'img', 'style'],
+			ALLOWED_ATTR: ['href', 'class', 'style', 'src', 'alt', 'target', 'rel'],
+		})
 		previewTit.value = getContentFromTitleTags(previewCode.value)
 	}
 }

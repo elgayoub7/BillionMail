@@ -125,7 +125,7 @@ func ReadProjectConfig(Domain string) (ProjectConfig, error) {
 func SaveProjectConfig(Domain string, config ProjectConfig) error {
 	projectConfigPath := fmt.Sprintf("%s/%s", PRODUCT_CONFIG_PATH, Domain)
 	if !public.FileExists(projectConfigPath) {
-		os.MkdirAll(projectConfigPath, os.ModePerm)
+		os.MkdirAll(projectConfigPath, 0750)
 	}
 	filename := fmt.Sprintf("%s/project.json", projectConfigPath)
 
@@ -134,7 +134,7 @@ func SaveProjectConfig(Domain string, config ProjectConfig) error {
 		return fmt.Errorf("error marshalling project configuration: %v", err)
 	}
 	config.UpdateTime = public.GetNowTime() // Update the time before saving
-	err = os.WriteFile(filename, configStr, os.ModePerm)
+	err = os.WriteFile(filename, configStr, 0750)
 	if err != nil {
 		return fmt.Errorf("error writing project configuration file: %v", err)
 	}
@@ -309,7 +309,7 @@ func ReadKnowledgeBase(Domain string, Kid string) (KnowledgeInfo, error) {
 func SaveKnowledgeBase(Domain string, knowledge KnowledgeInfo) error {
 	knowledgePath := fmt.Sprintf("%s/%s/knowledge", PRODUCT_CONFIG_PATH, Domain)
 	if !public.FileExists(knowledgePath) {
-		os.MkdirAll(knowledgePath, os.ModePerm)
+		os.MkdirAll(knowledgePath, 0750)
 	}
 	filename := fmt.Sprintf("%s/%s.json", knowledgePath, knowledge.Kid)
 
@@ -318,7 +318,7 @@ func SaveKnowledgeBase(Domain string, knowledge KnowledgeInfo) error {
 		return fmt.Errorf("error marshalling knowledge base: %v", err)
 	}
 
-	err = os.WriteFile(filename, configStr, os.ModePerm)
+	err = os.WriteFile(filename, configStr, 0750)
 	if err != nil {
 		return fmt.Errorf("error writing knowledge base file: %v", err)
 	}
@@ -331,7 +331,7 @@ func SaveKnowledgeBase(Domain string, knowledge KnowledgeInfo) error {
 func GetKnowledgeBaseList(Domain string) ([]KnowledgeInfo, error) {
 	knowledgePath := fmt.Sprintf("%s/%s/knowledge", PRODUCT_CONFIG_PATH, Domain)
 	if !public.FileExists(knowledgePath) {
-		os.MkdirAll(knowledgePath, os.ModePerm)
+		os.MkdirAll(knowledgePath, 0750)
 		// If the knowledge base directory does not exist, create it
 	}
 
@@ -437,7 +437,7 @@ func ReadCompanyProfile(Domain string) (CompanyProfile, error) {
 		if err != nil {
 			return CompanyProfile{}, fmt.Errorf("error marshalling company profile: %v", err)
 		}
-		err = os.WriteFile(filename, companyProfileJson, 0644)
+		err = os.WriteFile(filename, companyProfileJson, 0640)
 		if err != nil {
 			return CompanyProfile{}, fmt.Errorf("error creating company profile file: %v", err)
 		}
@@ -463,7 +463,7 @@ func SaveCompanyProfile(Domain string, profile CompanyProfile) error {
 	if err != nil {
 		return fmt.Errorf("error marshalling company profile: %v", err)
 	}
-	err = os.WriteFile(filename, data, 0644)
+	err = os.WriteFile(filename, data, 0640)
 	if err != nil {
 		return fmt.Errorf("error saving company profile file: %v", err)
 	}
@@ -790,7 +790,7 @@ func GetPrompt(Domain string) (PromptConfig, error) {
 		if err != nil {
 			return PromptConfig{}, fmt.Errorf("error marshalling default prompt config: %v", err)
 		}
-		err = os.WriteFile(filename, defaultPromptJson, 0644)
+		err = os.WriteFile(filename, defaultPromptJson, 0640)
 		if err != nil {
 			return PromptConfig{}, fmt.Errorf("error saving default prompt config file: %v", err)
 		}
@@ -829,7 +829,7 @@ func ModifyPrompt(Domain string, Prompt string) error {
 	if err != nil {
 		return fmt.Errorf("error marshalling prompt config: %v", err)
 	}
-	err = os.WriteFile(filename, data, 0644)
+	err = os.WriteFile(filename, data, 0640)
 	if err != nil {
 		return fmt.Errorf("error saving prompt config file: %v", err)
 	}
@@ -889,7 +889,7 @@ type BotStyle struct {
 func SaveImagesConfig(Domain string, images []ImageInfo) error {
 	imagesPath := fmt.Sprintf("%s/%s/images.json", PRODUCT_CONFIG_PATH, Domain)
 	if !public.FileExists(PRODUCT_CONFIG_PATH + "/" + Domain) {
-		os.MkdirAll(PRODUCT_CONFIG_PATH+"/"+Domain, os.ModePerm)
+		os.MkdirAll(PRODUCT_CONFIG_PATH+"/"+Domain, 0750)
 	}
 	data, err := json.MarshalIndent(images, "", "  ")
 	if err != nil {

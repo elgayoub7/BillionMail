@@ -47,8 +47,44 @@ import (
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/os/gcmd"
+	"github.com/gogf/gf/v2/os/gsession"
 	"github.com/gogf/gf/v2/util/gconv"
 )
+
+func corsMiddleware(r *ghttp.Request) {
+	origin := r.GetHeader("Origin")
+	serverAddr := g.Cfg().MustGet(r.Context(), "server.address").String()
+
+	allowed := false
+	allowedOrigins := []string{
+		"http://localhost", "http://localhost:80", "http://localhost:8080",
+		"http://127.0.0.1", "http://127.0.0.1:80", "http://127.0.0.1:8080",
+	}
+	if serverAddr != "" {
+		allowedOrigins = append(allowedOrigins, serverAddr, "https://"+serverAddr, "http://"+serverAddr)
+	}
+
+	for _, ao := range allowedOrigins {
+		if origin == ao {
+			allowed = true
+			break
+		}
+	}
+
+	if allowed {
+		r.Response.Header().Set("Access-Control-Allow-Origin", origin)
+		r.Response.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
+		r.Response.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+		r.Response.Header().Set("Access-Control-Allow-Credentials", "true")
+		r.Response.Header().Set("Vary", "Origin")
+	}
+
+	if r.Method == "OPTIONS" {
+		r.Response.WriteStatus(204)
+		r.Exit()
+	}
+	r.Middleware.Next()
+}
 
 var (
 	Main = gcmd.Command{
@@ -134,7 +170,7 @@ var (
 			s := g.Server(consts.DEFAULT_SERVER_NAME)
 
 			// Use Redis for session storage
-			// s.SetSessionStorage(gsession.NewStorageRedis(g.Redis()))
+			s.SetSessionStorage(gsession.NewStorageRedis(g.Redis()))
 
 			// ip whitelist middleware
 			s.Use(middleware.IPWhitelist)
@@ -214,7 +250,7 @@ var (
 			// Register Common Handlers
 			s.Group("/", func(group *ghttp.RouterGroup) {
 				// Add CORS middleware
-				group.Middleware(ghttp.MiddlewareCORS)
+				group.Middleware(corsMiddleware)
 
 				// Add docker client middleware
 				group.Middleware(func(r *ghttp.Request) {
@@ -230,7 +266,7 @@ var (
 			// Register Apis
 			s.Group("/api", func(group *ghttp.RouterGroup) {
 				// Add CORS middleware
-				group.Middleware(ghttp.MiddlewareCORS)
+				group.Middleware(corsMiddleware)
 
 				// Add docker client middleware
 				group.Middleware(func(r *ghttp.Request) {
@@ -470,7 +506,7 @@ var (
  </head>
  <body>
    <div id="openapi-ui-container" spec-url="{SwaggerUIDocUrl}" theme="light"></div>
-   <script src="https://cdn.jsdelivr.net/npm/openapi-ui-dist@latest/lib/openapi-ui.umd.js"></script>
+   <script src="https://cdn.jsdelivr.net/npm/openapi-ui-dist@5.0.0/lib/openapi-ui.umd.js"></script>
  </body>
 </html>`)
 

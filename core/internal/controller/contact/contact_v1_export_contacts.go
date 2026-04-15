@@ -13,12 +13,28 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gtime"
 	"strings"
 	"time"
 )
+
+// sanitizeFilename sanitizes a filename to prevent header injection attacks.
+func sanitizeFilename(name string) string {
+	name = filepath.Base(name)
+	name = strings.Map(func(r rune) rune {
+		if r > 127 || strings.ContainsRune(`\/:*?"<>|`, r) {
+			return '_'
+		}
+		return r
+	}, name)
+	if name == "" || name == "." {
+		name = "export"
+	}
+	return name
+}
 
 func (c *ControllerV1) ExportContacts(ctx context.Context, req *v1.ExportContactsReq) (res *v1.ExportContactsRes, err error) {
 	res = &v1.ExportContactsRes{}
@@ -99,7 +115,7 @@ func (c *ControllerV1) ExportContacts(ctx context.Context, req *v1.ExportContact
 
 		// Set response headers for file download
 		r.Response.Header().Set("Content-Type", "application/octet-stream")
-		r.Response.Header().Set("Content-Disposition", "attachment; filename="+fileName)
+		r.Response.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, sanitizeFilename(fileName)))
 		r.Response.Write([]byte(content))
 
 	} else { // Separate export - ZIP file
@@ -150,7 +166,7 @@ func (c *ControllerV1) ExportContacts(ctx context.Context, req *v1.ExportContact
 				continue
 			}
 
-			fileName := fmt.Sprintf("%s.%s", group.Name, req.Format)
+			fileName := fmt.Sprintf("%s.%s", sanitizeFilename(group.Name), req.Format)
 			files = append(files, ExportFile{
 				Name:     fileName,
 				Content:  content,
@@ -177,7 +193,7 @@ func (c *ControllerV1) ExportContacts(ctx context.Context, req *v1.ExportContact
 
 		// Set response headers for ZIP file download
 		r.Response.Header().Set("Content-Type", "application/octet-stream")
-		r.Response.Header().Set("Content-Disposition", "attachment; filename="+zipFileName)
+		r.Response.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, sanitizeFilename(zipFileName)))
 		r.Response.Write(zipContent)
 	}
 

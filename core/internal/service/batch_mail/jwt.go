@@ -2,11 +2,17 @@ package batch_mail
 
 import (
 	"context"
+	crypto_rand "crypto/rand"
 	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
+	"github.com/gogf/gf/v2/os/gfile"
 	"github.com/golang-jwt/jwt/v5"
 	"sync"
 	"time"
@@ -32,20 +38,45 @@ type jwtConfig struct {
 }
 
 var (
-	config *jwtConfig
-	once   sync.Once
+	unsubscribeConfig *jwtConfig
+	unsubscribeOnce   sync.Once
+	subscribeConfig   *jwtConfig
+	subscribeOnce     sync.Once
 )
 
-// getConfig get JWT config singleton
-func getConfig() *jwtConfig {
-	once.Do(func() {
-		config = loadConfig()
-	})
-	return config
+// generateSecret generates a cryptographically random secret and persists it to the given file.
+// If the file already exists with a valid secret, it returns the existing one.
+func generateSecret(secretFile string) string {
+	if gfile.Exists(secretFile) {
+		content := string(gfile.GetContents(secretFile))
+		content = strings.TrimSpace(content)
+		if len(content) >= 32 {
+			return content
+		}
+	}
+	b := make([]byte, 32)
+	_, err := crypto_rand.Read(b)
+	if err != nil {
+		// Fallback to a hash of time + pid if crypto_rand fails
+		h := sha256.New()
+		h.Write([]byte(fmt.Sprintf("%d%d", time.Now().UnixNano(), os.Getpid())))
+		return fmt.Sprintf("%x", h.Sum(nil))
+	}
+	secret := hex.EncodeToString(b)
+	gfile.PutContents(secretFile, secret)
+	return secret
 }
 
-// loadConfig load JWT config
-func loadConfig() *jwtConfig {
+// getUnsubscribeConfig get JWT config singleton for unsubscribe
+func getUnsubscribeConfig() *jwtConfig {
+	unsubscribeOnce.Do(func() {
+		unsubscribeConfig = loadUnsubscribeConfig()
+	})
+	return unsubscribeConfig
+}
+
+// loadUnsubscribeConfig load JWT config for unsubscribe
+func loadUnsubscribeConfig() *jwtConfig {
 	ctx := gctx.New()
 	return &jwtConfig{
 		secret: getOrGenerateSecret(ctx),
@@ -65,7 +96,7 @@ func getOrGenerateSecret(ctx context.Context) string {
 	}
 
 	// 2. generate new secret
-	newSecret := generateSecret(ctx)
+	newSecret := generateSecret("data/jwt_unsubscribe_secret.txt")
 
 	// 3. save to database
 	_, err = g.DB().Model("bm_options").
@@ -94,37 +125,9 @@ func getOrGenerateSecret(ctx context.Context) string {
 	return newSecret
 }
 
-// generateSecret generate secret
-func generateSecret(ctx context.Context) string {
-	// use application fixed features as secret components
-	components := []string{
-		"BILLION_MAIL_UNSUBSCRIBE",                            // application identifier
-		g.Cfg().MustGet(ctx, "server.address").String(),       // server address
-		g.Cfg().MustGet(ctx, "server.sessionIdName").String(), // session name
-	}
-
-	// if database config exists, add database name as component
-	if dbName := g.Cfg().MustGet(ctx, "database.name").String(); dbName != "" {
-		components = append(components, dbName)
-	}
-
-	// add server specific information
-	if serverAgent := g.Cfg().MustGet(ctx, "server.serverAgent").String(); serverAgent != "" {
-		components = append(components, serverAgent)
-	}
-
-	// use SHA256 hash all components
-	h := sha256.New()
-	for _, component := range components {
-		h.Write([]byte(component))
-	}
-
-	return fmt.Sprintf("%x", h.Sum(nil))
-}
-
 // GenerateUnsubscribeJWT generate unsubscribe JWT
 func GenerateUnsubscribeJWT(email string, templateId, taskId, GroupId int) (string, error) {
-	cfg := getConfig()
+	cfg := getUnsubscribeConfig()
 	claims := UnsubscribeClaims{
 		Email:      email,
 		TemplateId: templateId,
@@ -146,7 +149,7 @@ func ParseUnsubscribeJWT(tokenString string) (*UnsubscribeClaims, error) {
 		return nil, errors.New("empty token string")
 	}
 
-	cfg := getConfig()
+	cfg := getUnsubscribeConfig()
 
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		// Validate signing method
@@ -209,10 +212,10 @@ type SubscribeConfirmClaims struct {
 }
 
 func getSubscribeConfirmConfig() *jwtConfig {
-	once.Do(func() {
-		config = loadSubscribeConfirmConfig()
+	subscribeOnce.Do(func() {
+		subscribeConfig = loadSubscribeConfirmConfig()
 	})
-	return config
+	return subscribeConfig
 }
 
 func loadSubscribeConfirmConfig() *jwtConfig {
@@ -230,7 +233,7 @@ func getOrGenerateSubscribeConfirmSecret(ctx context.Context) string {
 	if err == nil && val != nil && val.String() != "" {
 		return val.String()
 	}
-	newSecret := generateSecret(ctx)
+	newSecret := generateSecret("data/jwt_subscribe_secret.txt")
 	_, err = g.DB().Model("bm_options").
 		Data(g.Map{
 			"name":  SUBSCRIBE_CONFIRM_JWT_SECRET,

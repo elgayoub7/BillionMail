@@ -3,6 +3,7 @@ package video_outreach
 import (
 	"html/template"
 	"net/http"
+	"strings"
 
 	"github.com/gogf/gf/v2/net/ghttp"
 )
@@ -52,7 +53,30 @@ func ServeLandingPage(r *ghttp.Request) {
 		r.Response.WriteStatus(http.StatusBadRequest, "missing video or name param")
 		return
 	}
+
+	// Validate video URL
+	if !strings.HasPrefix(video, "https://") && !strings.HasPrefix(video, "http://") {
+		r.Response.WriteStatus(http.StatusBadRequest, "invalid video URL")
+		return
+	}
+
+	// Validate thumb URL if provided
+	if thumb != "" && !strings.HasPrefix(thumb, "https://") && !strings.HasPrefix(thumb, "http://") {
+		thumb = ""
+	}
+
+	// Sanitize name - remove non-printable and high unicode
+	name = strings.Map(func(r rune) rune {
+		if r > 127 {
+			return '_'
+		}
+		return r
+	}, name)
+
+	// Validate CTA
 	if cta == "" {
+		cta = "#"
+	} else if cta != "#" && !strings.HasPrefix(cta, "https://") && !strings.HasPrefix(cta, "http://") {
 		cta = "#"
 	}
 

@@ -4,6 +4,7 @@ import (
 	"billionmail-core/internal/service/public"
 	"billionmail-core/utility/types/api_v1"
 	"github.com/gogf/gf/util/gvalid"
+	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
 	"strings"
 )
@@ -40,11 +41,13 @@ func HandleApiResponse(r *ghttp.Request) {
 			return
 		}
 
+		// Log internal error and respond with generic message.
+			g.Log().Errorf(r.Context(), "Internal server error: %+v", r.GetError())
 		// Respond with 500 error.
 		r.Response.WriteJson(api_v1.StandardRes{
 			Success: false,
 			Code:    500,
-			Msg:     r.GetError().Error(),
+			Msg:     "Internal server error",
 		})
 
 		return

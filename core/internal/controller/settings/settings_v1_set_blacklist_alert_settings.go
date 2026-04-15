@@ -38,13 +38,20 @@ func (c *ControllerV1) SetBlacklistAlertSettings(ctx context.Context, req *v1.Se
 
 	alertSettingsFile := public.AbsPath("../core/data/blacklist_alert_settings.json")
 
+	// Encrypt the SMTP password before storing
+	encryptedPassword, err := relay.EncryptPassword(ctx, req.SMTPPassword)
+	if err != nil {
+		res.SetError(gerror.Newf(public.LangCtx(ctx, "Failed to encrypt SMTP password: {}", err.Error())))
+		return res, nil
+	}
+
 	data := g.Map{
-		"name":           req.Name,
-		"sender_email":   req.SenderEmail,
-		"smtp_password":  req.SMTPPassword,
-		"smtp_server":    req.SMTPServer,
-		"smtp_port":      req.SMTPPort,
-		"recipient_list": req.RecipientList,
+		"name":             req.Name,
+		"sender_email":     req.SenderEmail,
+		"smtp_password":    encryptedPassword,
+		"smtp_server":      req.SMTPServer,
+		"smtp_port":        req.SMTPPort,
+		"recipient_list":   req.RecipientList,
 	}
 
 	jsonData, err := json.MarshalIndent(data, "", "  ")

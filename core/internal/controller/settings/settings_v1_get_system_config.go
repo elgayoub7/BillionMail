@@ -4,6 +4,7 @@ import (
 	"billionmail-core/api/settings/v1"
 	"billionmail-core/internal/service/domains"
 	"billionmail-core/internal/service/public"
+	"billionmail-core/internal/service/relay"
 	"context"
 	"encoding/json"
 
@@ -151,6 +152,15 @@ func loadBlacklistAlertSettings() (*v1.BlacklistAlertSettings, error) {
 	err := json.Unmarshal([]byte(content), &settings)
 	if err != nil {
 		return nil, gerror.Wrap(err, "Failed to parse alert settings")
+	}
+
+	// Decrypt the SMTP password
+	if settings.SMTPPassword != "" {
+		decrypted, err := relay.DecryptPassword(context.Background(), settings.SMTPPassword)
+		if err == nil && decrypted != "" {
+			settings.SMTPPassword = decrypted
+		}
+		// If decryption fails, keep the stored value as-is (may be a legacy plaintext password)
 	}
 
 	return &settings, nil

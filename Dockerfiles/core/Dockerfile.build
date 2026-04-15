@@ -18,7 +18,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /build/billionmail .
 # --- Stage 2: Build Frontend ---
 FROM node:20-alpine AS frontend-builder
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
 
 WORKDIR /build
 COPY core/frontend/package.json core/frontend/pnpm-lock.yaml* ./
@@ -81,6 +81,8 @@ COPY Dockerfiles/core/supervisord.conf /etc/supervisor/supervisord.conf
 COPY Dockerfiles/core/fail2ban.conf /etc/fail2ban/fail2ban.conf
 
 RUN chown -R billionmail:billionmail /opt/billionmail /stop-supervisor.sh /core.sh /restart_fail2ban.sh
+
+USER billionmail
 
 ENTRYPOINT ["/core.sh"]
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]

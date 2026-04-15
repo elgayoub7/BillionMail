@@ -15,6 +15,11 @@ const (
 	CHAT_CONFIG_PATH = "../conf/chat"
 )
 
+// isValidPathComponent validates that a path component does not contain path traversal characters.
+func isValidPathComponent(name string) bool {
+	return name != "" && !strings.Contains(name, "..") && !strings.ContainsAny(name, "/\\")
+}
+
 type TempChat struct {
 	ChatId      string `json:"chatId"`       // Unique identifier for the chat
 	Domain      string `json:"domain"`       // Domain associated with the chat
@@ -75,16 +80,19 @@ var ChatStatus = map[string]bool{}
 func SaveTempChat(chatId string, chatInfo *TempChat) error {
 	// Implementation for saving a temporary chat
 	// This function should handle the logic for saving the temporary chat information
+	if !isValidPathComponent(chatId) {
+		return errors.New("invalid chat ID")
+	}
 	tempChatPath := CHAT_CONFIG_PATH + "/" + chatId
 	if !public.FileExists(tempChatPath) {
-		os.MkdirAll(tempChatPath, os.ModePerm)
+		os.MkdirAll(tempChatPath, 0750)
 	}
 	jsonData, err := json.Marshal(chatInfo)
 	if err != nil {
 		return err
 	}
 	tempChatFile := tempChatPath + "/config.json"
-	os.WriteFile(tempChatFile, jsonData, 0644)
+	os.WriteFile(tempChatFile, jsonData, 0640)
 	return nil
 }
 
@@ -110,21 +118,27 @@ func GetTempChat(chatId string) (*TempChat, error) {
 func SaveChat(chatId string, chatInfo *ChatInfo) error {
 	// Implementation for saving chat information
 	// This function should handle the logic for saving the chat information
+	if !isValidPathComponent(chatId) {
+		return errors.New("invalid chat ID")
+	}
 	chatPath := CHAT_CONFIG_PATH + "/" + chatId
 	if !public.FileExists(chatPath) {
-		os.MkdirAll(chatPath, os.ModePerm)
+		os.MkdirAll(chatPath, 0750)
 	}
 	jsonData, err := json.Marshal(chatInfo)
 	if err != nil {
 		return err
 	}
 	chatFile := chatPath + "/info.json"
-	return os.WriteFile(chatFile, jsonData, 0644)
+	return os.WriteFile(chatFile, jsonData, 0640)
 }
 
 func GetChat(chatId string) (*ChatInfo, error) {
 	// Implementation for retrieving chat information
 	// This function should handle the logic for loading the chat information
+	if !isValidPathComponent(chatId) {
+		return nil, errors.New("invalid chat ID")
+	}
 	chatPath := CHAT_CONFIG_PATH + "/" + chatId + "/info.json"
 	if !public.FileExists(chatPath) {
 		return nil, os.ErrNotExist
@@ -142,6 +156,9 @@ func GetChat(chatId string) (*ChatInfo, error) {
 }
 
 func GetMessages(chatId string) []Message {
+	if !isValidPathComponent(chatId) {
+		return []Message{}
+	}
 	messageFile := CHAT_CONFIG_PATH + "/" + chatId + "/message.json"
 	if !public.FileExists(messageFile) {
 		return []Message{} // Return an empty slice if the file does not exist
@@ -285,6 +302,9 @@ func Chat(ctx context.Context, chatId string, supplierName string, modelId strin
 // RemoveChat removes a chat by its ID
 // This function should handle the logic for removing a chat based on the provided chat ID
 func RemoveChat(chatId string) error {
+	if !isValidPathComponent(chatId) {
+		return errors.New("invalid chat ID")
+	}
 	chatPath := CHAT_CONFIG_PATH + "/" + chatId
 	if !public.FileExists(chatPath) {
 		return os.ErrNotExist
@@ -364,7 +384,7 @@ func ModifyHtml(chatId string, content string) error {
 		"content": content, // Update the HTML content in the database
 	})
 
-	return os.WriteFile(filename, []byte(content), os.ModePerm)
+	return os.WriteFile(filename, []byte(content), 0750)
 }
 
 func CopyChat(chatId string, domain string) (string, string, error) {
@@ -417,7 +437,7 @@ func CopyChat(chatId string, domain string) (string, string, error) {
 		if err != nil {
 			return "", oldCode, err
 		}
-		err = os.WriteFile(newCodeFile, oldCodeBytes, os.ModePerm)
+		err = os.WriteFile(newCodeFile, oldCodeBytes, 0750)
 		if err != nil {
 			return "", oldCode, err
 		}

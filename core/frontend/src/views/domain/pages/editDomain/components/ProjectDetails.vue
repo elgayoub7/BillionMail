@@ -208,7 +208,7 @@
 
 <script setup lang="ts">
 import mk from 'markdown-it'
-import { confirm } from '@/utils'
+import { confirm, sanitizeHtml } from '@/utils'
 import {
 	getProjectDetail,
 	createKnowledgeBase,
@@ -255,7 +255,7 @@ const secondaryUpload = ref()
 const primaryUpload = ref()
 
 watch(knowledge_base_content, val => {
-	mdRes.value = md.render(val)
+	mdRes.value = sanitizeHtml(md.render(val))
 })
 
 getProjectDetail(domain)

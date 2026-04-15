@@ -30,7 +30,12 @@ func (c *ControllerV1) Login(ctx context.Context, req *v1.LoginReq) (res *v1.Log
 
 	cacheKey := fmt.Sprintf("USER_LOGIN_RETRIES:%s", clientIp)
 
-	loginRetries, mustValidateCode := public.GetCache(cacheKey).(int)
+	val := public.GetCache(cacheKey)
+	var loginRetries int
+	if val != nil {
+		loginRetries, _ = val.(int)
+	}
+	mustValidateCode := loginRetries > 0
 
 	// End of request, check if login was successful
 	defer func() {
@@ -51,7 +56,12 @@ func (c *ControllerV1) Login(ctx context.Context, req *v1.LoginReq) (res *v1.Log
 
 	if loginRetries >= maxRetries {
 		k := "USER_LOGIN_RETRIES_RELEASE_TIME:" + clientIp
-		releaseTime, blocked := public.GetCache(k).(int64)
+		cacheVal := public.GetCache(k)
+		var releaseTime int64
+		blocked := cacheVal != nil
+		if cacheVal != nil {
+			releaseTime, _ = cacheVal.(int64)
+		}
 		if !blocked {
 			releaseTime = time.Now().Unix() + int64(blockTime)
 			public.SetCache(k, releaseTime, blockTime)

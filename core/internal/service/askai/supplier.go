@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/gogf/gf/v2/frame/g"
@@ -70,7 +71,7 @@ func SyncTemplateToConfig() {
 
 		dstSupplierPath := SUPPLIER_CONFIG_PATH + "/" + supplierName
 		if !public.FileExists(dstSupplierPath) {
-			os.MkdirAll(dstSupplierPath, os.ModePerm)
+			os.MkdirAll(dstSupplierPath, 0750)
 		}
 
 		srcConfigFile := SUPPLIER_TEMPLATE_PATH + "/" + supplierName + "/config.json"
@@ -80,7 +81,7 @@ func SyncTemplateToConfig() {
 			if err != nil {
 				continue
 			}
-			os.WriteFile(dstConfigFile, fBody, os.ModePerm)
+			os.WriteFile(dstConfigFile, fBody, 0750)
 		}
 
 		srcModelsFile := SUPPLIER_TEMPLATE_PATH + "/" + supplierName + "/models.json"
@@ -90,7 +91,7 @@ func SyncTemplateToConfig() {
 			if err != nil {
 				continue
 			}
-			os.WriteFile(dstModelsFile, fBody, os.ModePerm)
+			os.WriteFile(dstModelsFile, fBody, 0750)
 		}
 
 		srcEmbeddingFile := SUPPLIER_TEMPLATE_PATH + "/" + supplierName + "/embedding.json"
@@ -100,7 +101,7 @@ func SyncTemplateToConfig() {
 			if err != nil {
 				continue
 			}
-			os.WriteFile(dstEmbeddingFile, fBody, os.ModePerm)
+			os.WriteFile(dstEmbeddingFile, fBody, 0750)
 		}
 	}
 
@@ -172,6 +173,9 @@ func List() []Supplier {
 // It reads the file, unmarshals the JSON content into a slice of ModelInfo structs, and returns it.
 // If the file does not exist or an error occurs, it returns an empty slice.
 func GetModelList(supplierName string) []ModelInfo {
+	if !isValidPathComponent(supplierName) {
+		return make([]ModelInfo, 0)
+	}
 	modelsFile := SUPPLIER_CONFIG_PATH + "/" + supplierName + "/models.json"
 
 	Models := make([]ModelInfo, 0)
@@ -235,7 +239,7 @@ func saveModelsToFile(modelsFile string, models []ModelInfo) error {
 		return err
 	}
 
-	err = os.WriteFile(modelsFile, fBody, os.ModePerm)
+	err = os.WriteFile(modelsFile, fBody, 0750)
 	if err != nil {
 		return err
 	}
@@ -247,6 +251,9 @@ func saveModelsToFile(modelsFile string, models []ModelInfo) error {
 // If the model already exists, it updates the existing entry; otherwise, it appends the new model.
 // It reads the existing models, modifies or adds the new model, and writes the updated list.
 func SaveModelInfo(supplierName string, modelId string, modelInfo ModelInfo) error {
+	if !isValidPathComponent(supplierName) {
+		return errors.New("invalid supplier name")
+	}
 	modelsFile := SUPPLIER_CONFIG_PATH + "/" + supplierName + "/models.json"
 
 	// Read existing models
@@ -397,6 +404,9 @@ func AddModel(supplierName string, title string, modelId string, max_tokens int,
 // It reads the existing models, finds the model with the specified modelId, and removes it.
 // If the model is found and removed, it saves the updated list back to the file.
 func RemoveModel(supplierName string, modelId string) error {
+	if !isValidPathComponent(supplierName) {
+		return errors.New("invalid supplier name")
+	}
 	modelsFile := SUPPLIER_CONFIG_PATH + "/" + supplierName + "/models.json"
 
 	// Read existing models
@@ -416,9 +426,12 @@ func RemoveModel(supplierName string, modelId string) error {
 // SaveSupplierConfig saves the supplier configuration to a JSON file.
 // It creates the necessary directory structure if it doesn't exist and writes the configuration to config.json.
 func SaveSupplierConfig(supplierName string, supplierConfig Supplier) error {
+	if !isValidPathComponent(supplierName) {
+		return errors.New("invalid supplier name")
+	}
 	configDir := SUPPLIER_CONFIG_PATH + "/" + supplierName
 	if !public.FileExists(configDir) {
-		err := os.MkdirAll(configDir, os.ModePerm)
+		err := os.MkdirAll(configDir, 0750)
 		if err != nil {
 			return err
 		}
@@ -430,7 +443,7 @@ func SaveSupplierConfig(supplierName string, supplierConfig Supplier) error {
 		return err
 	}
 
-	err = os.WriteFile(configFile, fBody, os.ModePerm)
+	err = os.WriteFile(configFile, fBody, 0750)
 	if err != nil {
 		return err
 	}
@@ -441,6 +454,9 @@ func SaveSupplierConfig(supplierName string, supplierConfig Supplier) error {
 // ReadSupplierConfig reads the supplier configuration from a JSON file.
 // It checks if the configuration file exists, reads its content, and unmarshals it into a Supplier struct.
 func ReadSupplierConfig(supplierName string) (*Supplier, error) {
+	if !isValidPathComponent(supplierName) {
+		return nil, os.ErrNotExist
+	}
 	configFile := SUPPLIER_CONFIG_PATH + "/" + supplierName + "/config.json"
 	if !public.FileExists(configFile) {
 		return nil, os.ErrNotExist
@@ -594,6 +610,9 @@ func SetModelStatus(supplierName string, modelId string, status bool) error {
 // AddSupplier creates a new supplier configuration file with the provided details.
 // It checks if a supplier with the same name already exists, and if not, it creates a new Supplier struct
 func AddSupplier(supplierTitle string, supplierName string, baseUrl string, apiKey string) error {
+	if !isValidPathComponent(supplierName) {
+		return errors.New("invalid supplier name")
+	}
 	supplierPath := SUPPLIER_CONFIG_PATH + "/" + supplierName
 	if public.FileExists(supplierPath) {
 		return errors.New("supplier already exists")
@@ -621,6 +640,9 @@ func AddSupplier(supplierTitle string, supplierName string, baseUrl string, apiK
 // If the supplier does not exist, it returns an error indicating that the supplier cannot be found.
 // This function is useful for cleaning up unused suppliers from the configuration.
 func RemoveSupplier(supplierName string) error {
+	if !isValidPathComponent(supplierName) {
+		return errors.New("invalid supplier name")
+	}
 	supplierPath := SUPPLIER_CONFIG_PATH + "/" + supplierName
 	if !public.FileExists(supplierPath) {
 		return errors.New("supplier does not exist")
@@ -642,6 +664,9 @@ func RemoveSupplier(supplierName string) error {
 // It reads the existing models, modifies the title of the specified model, and saves the updated list back to the file.
 // If the model is not found, it returns an error indicating that the model does not exist.
 func SetModelTitle(supplierName string, modelId string, title string) error {
+	if !isValidPathComponent(supplierName) {
+		return errors.New("invalid supplier name")
+	}
 	modelsFile := SUPPLIER_CONFIG_PATH + "/" + supplierName + "/models.json"
 	if !public.FileExists(modelsFile) {
 		return errors.New("models file does not exist for supplier: " + supplierName)
@@ -665,6 +690,9 @@ func SetModelTitle(supplierName string, modelId string, title string) error {
 // It reads the existing models, modifies the capability of the specified model, and saves the updated list back to the file.
 // If the model is not found, it returns an error indicating that the model does not exist.
 func SetModelCapability(supplierName string, modelId string, capability []string) error {
+	if !isValidPathComponent(supplierName) {
+		return errors.New("invalid supplier name")
+	}
 	modelsFile := SUPPLIER_CONFIG_PATH + "/" + supplierName + "/models.json"
 	if !public.FileExists(modelsFile) {
 		return errors.New("models file does not exist for supplier: " + supplierName)
@@ -689,6 +717,9 @@ func SetModelCapability(supplierName string, modelId string, capability []string
 // If the model is not found, it returns an error indicating that the model does not exist.
 // This function is useful for updating model configurations without needing to remove and re-add the model.
 func ModifyModel(supplierName string, modelId string, maxTokens int, capability []string, title string) error {
+	if !isValidPathComponent(supplierName) {
+		return errors.New("invalid supplier name")
+	}
 	modelsFile := SUPPLIER_CONFIG_PATH + "/" + supplierName + "/models.json"
 	if !public.FileExists(modelsFile) {
 		return errors.New("models file does not exist for supplier: " + supplierName)

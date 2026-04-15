@@ -11,6 +11,7 @@ import hljs from 'highlight.js'
 import 'highlight.js/styles/github.css'
 import 'github-markdown-css'
 import { useCopy } from '@/hooks/useCopy'
+import { sanitizeHtml } from '@/utils'
 
 const { code, language } = defineProps({
 	code: {
@@ -30,7 +31,7 @@ ${code}
 })
 
 const result = computed(() => {
-	return marked.parse(content.value)
+	return sanitizeHtml(marked.parse(content.value) as string)
 })
 
 const { copyText } = useCopy()
