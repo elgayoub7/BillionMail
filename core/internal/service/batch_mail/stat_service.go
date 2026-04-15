@@ -1,8 +1,10 @@
 package batch_mail
 
 import (
+	"billionmail-core/api/batch_mail/v1"
 	"billionmail-core/internal/service/public"
 	"context"
+	"fmt"
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/frame/g"
 	"strconv"
@@ -207,12 +209,8 @@ func (s *TaskStatService) fillChartDataDaily(data []map[string]interface{}, fill
 		return data
 	}
 
-	// 使用开始日期的0点
-	// startTime = time.Unix(startTime, 0).Truncate(24 * time.Hour).Unix()
-
 	m := make(map[int64]map[string]interface{}, len(data))
 	for _, item := range data {
-		// 确保类型转换正确
 		var timestamp int64
 		switch x := item[fillKey].(type) {
 		case int64:
@@ -447,4 +445,71 @@ func (s *TaskStatService) getTaskSendMailDashboard(taskId int64, domain string, 
 	}
 
 	return aggregate
+}
+
+// GetTaskRecipients returns per-recipient analytics for a task.
+func (s *TaskStatService) GetTaskRecipients(taskId int, status, search string, page, pageSize int) (int, []*v1.RecipientAnalyticsItem, error) {
+	if page <= 0 {
+		page = 1
+	}
+	if pageSize <= 0 || pageSize > 100 {
+		pageSize = 20
+	}
+
+	openSubquery := fmt.Sprintf(`(
+		SELECT recipient, COUNT(*) as opened, MIN(log_time) as first_open
+		FROM mailstat_opened WHERE campaign_id = %d
+		GROUP BY recipient
+	) o`, taskId)
+
+	clickSubquery := fmt.Sprintf(`(
+		SELECT recipient, COUNT(*) as clicked, MIN(log_time) as first_click
+		FROM mailstat_clicked WHERE campaign_id = %d
+		GROUP BY recipient
+	) c`, taskId)
+
+	query := g.DB().Model("recipient_info ri").
+		LeftJoin("mailstat_message_ids mi", "ri.message_id = mi.message_id").
+		LeftJoin("mailstat_send_mails sm", "mi.postfix_message_id = sm.postfix_message_id").
+		LeftJoin(openSubquery, "").
+		LeftJoin(clickSubquery, "")
+
+	query.Where("ri.task_id", taskId)
+
+	switch status {
+	case "sent":
+		query.Where("sm.status = 'sent'").Where("sm.dsn LIKE '2.%'")
+	case "bounced":
+		query.Where("sm.status", "bounced")
+	case "opened":
+		query.Where("o.opened > ?", 0)
+	case "clicked":
+		query.Where("c.clicked > ?", 0)
+	case "unopened":
+		query.Where("ri.is_sent", 1).Where("(o.opened IS NULL OR o.opened = 0)")
+	}
+
+	if search != "" {
+		query.Where("ri.recipient ILIKE ?", "%"+search+"%")
+	}
+
+	count, err := query.Count()
+	if err != nil {
+		return 0, nil, err
+	}
+
+	var items []*v1.RecipientAnalyticsItem
+	err = query.Fields(
+		"ri.recipient",
+		"COALESCE(sm.status, 'pending') as status",
+		"ri.sent_time",
+		"COALESCE(o.opened, 0) as opened",
+		"COALESCE(c.clicked, 0) as clicked",
+		"COALESCE(o.first_open, 0) as first_open",
+		"COALESCE(o.first_click, 0) as first_click",
+	).OrderDesc("ri.sent_time").
+		Limit((page-1)*pageSize, pageSize).
+		Scan(&items)
+
+	return count, items, err
 }

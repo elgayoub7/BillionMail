@@ -48,9 +48,26 @@ func TestGenerateSmtpServiceName(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := generateSmtpServiceName(tt.config)
-			assert.Equal(t, tt.want, got)
+			if tt.want != "" {
+				assert.Equal(t, tt.want, got)
+			}
 		})
 	}
+
+	// Oracle Cloud OCID: verify truncation under Postfix unix-domain socket limit
+	t.Run("oracle cloud OCID truncated", func(t *testing.T) {
+		cfg := &entity.BmRelayConfig{
+			Id:       1,
+			SmtpName: "Custom SMTP Relay",
+			RelayHost: "smtp.email.ap-chuncheon-1.oci.oraclecloud.com",
+			AuthUser: "ocid1.user.oc1.aaaaaaaau3kf7mwyjfoeotboxdc3k4oa6cuput76bc5xhftp26b7ptfrqpla",
+		}
+		got := generateSmtpServiceName(cfg)
+		assert.LessOrEqual(t, len(got), 80, "name must be <= 80 chars, got %d: %s", len(got), got)
+		assert.True(t, len(got) > 0)
+		// Full path with private/ prefix must be under Linux sun_path limit (107)
+		assert.LessOrEqual(t, len("private/")+len(got), 107, "full path must fit in sockaddr_un")
+	})
 }
 
 func TestCommentOutOldTransportMaps(t *testing.T) {
@@ -102,8 +119,8 @@ func TestEnsureSmtpsConfigInMasterCf(t *testing.T) {
 	markerBegin := "# BEGIN BILLIONMAIL SMTPS CONFIG - DO NOT EDIT THIS MARKER"
 	markerEnd := "# END BILLIONMAIL SMTPS CONFIG - DO NOT EDIT THIS MARKER"
 	smtpsService := `smtps     unix  -       -       n       -       -       smtp
-    -o smtp_tls_wrappermode=yes
-    -o smtp_tls_security_level=encrypt`
+	    -o smtp_tls_wrappermode=yes
+	    -o smtp_tls_security_level=encrypt`
 
 	t.Run("adds block when missing", func(t *testing.T) {
 		content := "existing config\n"

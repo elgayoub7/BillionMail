@@ -375,6 +375,22 @@
         "pausing": "Pausing task, please wait...",
         "resuming": "Resuming task, please wait...",
         "sendingTest": "Sending test email, please wait..."
+      },
+      "recipients": {
+        "title": "Recipients",
+        "status": "Status",
+        "search": "Search by email",
+        "email": "Email",
+        "sentTime": "Sent Time",
+        "opens": "Opens",
+        "clicks": "Clicks",
+        "firstOpen": "First Open",
+        "firstClick": "First Click",
+        "filterSent": "Sent",
+        "filterBounced": "Bounced",
+        "filterOpened": "Opened",
+        "filterClicked": "Clicked",
+        "filterUnopened": "Unopened"
       }
     },
     "template": {

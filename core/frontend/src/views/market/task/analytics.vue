@@ -12,6 +12,9 @@
 					</n-ellipsis>
 				</n-breadcrumb-item>
 			</n-breadcrumb>
+			<n-button type="primary" @click="router.push(`/market/task/analytics/${id.value}/recipients`)">
+				{{ $t('market.task.recipients.title') }}
+			</n-button>
 			<bt-time-range v-model:value="dateRange" default-type="last7days" @change="fetchOverviewData">
 			</bt-time-range>
 		</div>
@@ -58,7 +61,7 @@ import SendTodayStats from '@/views/overview/components/SendTodayStats.vue'
 import RateChartPanel from '@/views/overview/components/RateChartPanel.vue'
 
 const route = useRoute()
-
+const router = useRouter()
 const { t } = useI18n()
 
 const id = computed(() => {

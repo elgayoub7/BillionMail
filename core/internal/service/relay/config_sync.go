@@ -931,7 +931,7 @@ func updateSmtpServiceMappings(ctx context.Context, configs []*entity.BmRelayCon
 }
 
 // maxSmtpServiceNameLength limits Postfix unix-domain socket path length.
-const maxSmtpServiceNameLength = 64
+const maxSmtpServiceNameLength = 80
 
 // generateSmtpServiceName generates SMTP service name based on relay configuration.
 // Names are truncated to avoid exceeding Postfix unix-domain socket path limits.

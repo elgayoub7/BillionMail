@@ -44,6 +44,12 @@ const route: RouteRecordRaw = {
 			meta: { title: 'Analytics', hidden: true },
 			component: () => import('@/views/market/task/analytics.vue'),
 		},
+		{
+			path: 'task/analytics/:id/recipients',
+			name: 'MarketTaskRecipients',
+			meta: { title: 'Recipients', hidden: true },
+			component: () => import('@/views/market/task/recipients.vue'),
+		},
 	],
 }
 

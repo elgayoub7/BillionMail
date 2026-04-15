@@ -132,3 +132,13 @@ export function getMailProviderLogs(params: {
 }) {
 	return instance.get('/batch_mail/tracking/logs', { params })
 }
+
+export function getTaskRecipients(params: {
+	task_id: number
+	status?: string
+	search?: string
+	page?: number
+	page_size?: number
+}) {
+	return instance.get('/batch_mail/task/recipients', { params })
+}

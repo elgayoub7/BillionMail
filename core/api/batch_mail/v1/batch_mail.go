@@ -285,3 +285,32 @@ type UpdateTaskInfoReq struct {
 type UpdateTaskInfoRes struct {
 	api_v1.StandardRes
 }
+
+// GetTaskRecipientsReq Request for task recipient-level analytics
+type GetTaskRecipientsReq struct {
+	g.Meta   `path:"/batch_mail/task/recipients" method:"get" tags:"BatchMail" summary:"Get task recipient analytics"`
+	Authorization string `json:"authorization" dc:"Authorization" in:"header"`
+	TaskId   int    `json:"task_id" v:"required|min:1" dc:"Task ID"`
+	Status   string `json:"status" dc:"Filter: sent/bounced/opened/clicked/unopened"`
+	Search   string `json:"search" dc:"Search by email"`
+	Page     int    `json:"page" dc:"Page number"`
+	PageSize int    `json:"page_size" dc:"Items per page"`
+}
+
+type RecipientAnalyticsItem struct {
+	Recipient  string `json:"recipient"`
+	Status     string `json:"status"`
+	SentTime   int64  `json:"sent_time"`
+	Opened     int    `json:"opened"`
+	Clicked    int    `json:"clicked"`
+	FirstOpen  int64  `json:"first_open"`
+	FirstClick int64  `json:"first_click"`
+}
+
+type GetTaskRecipientsRes struct {
+	api_v1.StandardRes
+	Data struct {
+		Total int                        `json:"total" dc:"Total records"`
+		List  []*RecipientAnalyticsItem   `json:"list" dc:"Recipient analytics list"`
+	} `json:"data" dc:"Data"`
+}

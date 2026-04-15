@@ -35,4 +35,5 @@ type IBatchMailV1 interface {
 	Unsubscribe(ctx context.Context, req *v1.UnsubscribeReq) (res *v1.UnsubscribeRes, err error)
 	GetUserGroups(ctx context.Context, req *v1.GetUserGroupsReq) (res *v1.GetUserGroupsRes, err error)
 	UnsubscribeNew(ctx context.Context, req *v1.UnsubscribeNewReq) (res *v1.UnsubscribeNewRes, err error)
+	GetTaskRecipients(ctx context.Context, req *v1.GetTaskRecipientsReq) (res *v1.GetTaskRecipientsRes, err error)
 }
