@@ -13,6 +13,7 @@ import (
 	"billionmail-core/internal/service/maillog_stat"
 	"billionmail-core/internal/service/multi_ip_domain"
 	"billionmail-core/internal/service/relay"
+	"billionmail-core/internal/service/sequence"
 	"billionmail-core/internal/service/video_gen"
 	"billionmail-core/internal/service/warmup"
 	"context"
@@ -97,6 +98,16 @@ func Start(ctx context.Context) (err error) {
 	// ========== Mail task processing: one executor per task ==========
 	gtimer.Add(5*time.Second, func() {
 		batch_mail.ProcessEmailTasks(ctx)
+	})
+
+	// Sequence engine: advance enrollments and create step emails
+	gtimer.Add(30*time.Second, func() {
+		sequence.ProcessSequenceEnrollments(ctx)
+	})
+
+	// Sequence: update enrollments from completed email_tasks
+	gtimer.Add(1*time.Minute, func() {
+		sequence.UpdateEnrollmentsFromCompletedTasks(ctx)
 	})
 
 	// Idle actuators are cleaned every 10 minutes

@@ -1,0 +1,86 @@
+# =============================================================================
+# Multi-stage Dockerfile for BillionMail Core (Custom Build)
+# Compiles Go backend + builds Vue frontend + packages into final image
+# =============================================================================
+
+# --- Stage 1: Build Go Backend ---
+FROM golang:1.24-alpine AS go-builder
+
+RUN apk add --no-cache git gcc musl-dev
+
+WORKDIR /build
+COPY core/go.mod core/go.sum ./
+RUN go mod download
+
+COPY core/ .
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /build/billionmail .
+
+# --- Stage 2: Build Frontend ---
+FROM node:20-alpine AS frontend-builder
+
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+WORKDIR /build
+COPY core/frontend/package.json core/frontend/pnpm-lock.yaml* ./
+RUN pnpm install --frozen-lockfile 2>/dev/null || pnpm install
+
+COPY core/frontend/ .
+
+# Override server config for Docker build (no real server needed at build time)
+RUN mkdir -p build && printf 'interface ServerConfig { https: boolean; address: string; host: string }\nconst serverConfig: Record<string, ServerConfig> = { "docker": { https: true, address: "https://localhost", host: "localhost" } }\nexport default serverConfig\n' > build/config.ts
+
+RUN SERVER_NAME=docker pnpm run build
+
+# --- Stage 3: Final Image (based on original Dockerfile) ---
+FROM alpine:3.20
+
+LABEL maintainer="https://github.com/elgayoub7/BillionMail"
+
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+
+# Create non-root user
+RUN addgroup -S billionmail && adduser -S billionmail -G billionmail
+
+# Copy Go binary
+COPY --from=go-builder /build/billionmail /opt/billionmail/core/billionmail
+
+# Copy frontend dist
+COPY --from=frontend-builder /build/dist /opt/billionmail/core/public/dist
+
+# Copy core resources
+COPY core/manifest /opt/billionmail/core/manifest
+COPY core/languages /opt/billionmail/core/languages
+COPY core/resource /opt/billionmail/core/resource
+COPY core/template /opt/billionmail/core/template
+# Copy static public assets (favicon, etc.) if they exist
+COPY core/public/html /opt/billionmail/core/public/html/
+
+# Copy Dockerfile helper scripts
+COPY Dockerfiles/core/stop-supervisor.sh /stop-supervisor.sh
+COPY Dockerfiles/core/core.sh /core.sh
+COPY Dockerfiles/core/restart_fail2ban.sh /restart_fail2ban.sh
+
+# Install dependencies
+RUN apk add --no-cache \
+    bash \
+    ca-certificates \
+    curl \
+    supervisor \
+    rsyslog \
+    tzdata \
+    busybox-extras \
+    postgresql-client \
+    fail2ban \
+    iptables \
+    ipset \
+    && rm -rf /var/cache/apk/* \
+    && chmod +x /stop-supervisor.sh /core.sh /restart_fail2ban.sh /opt/billionmail/core/billionmail
+
+COPY Dockerfiles/core/supervisord.conf /etc/supervisor/supervisord.conf
+COPY Dockerfiles/core/fail2ban.conf /etc/fail2ban/fail2ban.conf
+
+RUN chown -R billionmail:billionmail /opt/billionmail /stop-supervisor.sh /core.sh /restart_fail2ban.sh
+
+ENTRYPOINT ["/core.sh"]
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
