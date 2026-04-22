@@ -195,7 +195,7 @@ func GetSequencesWithPage(ctx context.Context, page, pageSize int, keyword strin
 }
 
 // GetSequenceDetail returns full sequence detail with steps
-func GetSequenceDetail(ctx context.Context, id int) (*v1.SequenceDetail, error error) {
+func GetSequenceDetail(ctx context.Context, id int) (*v1.SequenceDetail, error) {
 	type seqRow struct {
 		Id                int    `json:"id"`
 		Name              string `json:"name"`
