@@ -24,14 +24,14 @@ func RecordEvent(ctx context.Context, eventType, email string, campaignId int, m
 			WhereIn("id", enrollmentIds).
 			Where("email", email).
 			Where("status", 0).
-			Data(g.Map{"total_opens": g.Raw("total_opens + 1")}).
+			Data(g.Map{"total_opens": gdb.Raw("total_opens + 1")}).
 			Update()
 	case "click":
 		g.DB().Model("bm_sequence_enrollments").
 			WhereIn("id", enrollmentIds).
 			Where("email", email).
 			Where("status", 0).
-			Data(g.Map{"total_clicks": g.Raw("total_clicks + 1")}).
+			Data(g.Map{"total_clicks": gdb.Raw("total_clicks + 1")}).
 			Update()
 	}
 

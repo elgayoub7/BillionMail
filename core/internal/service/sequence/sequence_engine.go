@@ -331,7 +331,7 @@ func createBatchStepEmails(ctx context.Context) {
 		}
 
 		g.DB().Model("bm_sequence_steps").Where("id", grp.StepId).Data(g.Map{
-			"sent_count": g.Raw("sent_count + 1"),
+			"sent_count": gdb.Raw("sent_count + 1"),
 		}).Update()
 	}
 }
@@ -376,7 +376,7 @@ func UpdateEnrollmentsFromCompletedTasks(ctx context.Context) {
 
 		for _, enrId := range enrollmentIds {
 			g.DB().Model("bm_sequence_enrollments").Where("id", enrId).Data(g.Map{
-				"total_emails_sent": g.Raw("total_emails_sent + 1"),
+				"total_emails_sent": gdb.Raw("total_emails_sent + 1"),
 			}).Update()
 		}
 
@@ -416,7 +416,7 @@ func markEnrollmentCompleted(ctx context.Context, enrollmentId int, now int64) {
 	g.DB().Model("bm_sequence_enrollments").Where("id", enrollmentId).Fields("sequence_id").Scan(&seqId)
 	if seqId > 0 {
 		g.DB().Model("bm_sequences").Where("id", seqId).Data(g.Map{
-			"total_completed": g.Raw("total_completed + 1"),
+			"total_completed": gdb.Raw("total_completed + 1"),
 			"update_time":    now,
 		}).Update()
 	}
