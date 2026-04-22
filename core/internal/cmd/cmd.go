@@ -3,10 +3,6 @@ package cmd
 import (
 	"billionmail-core/internal/consts"
 	"billionmail-core/internal/controller/abnormal_recipient"
-	"billionmail-core/internal/controller/abtest"
-	"billionmail-core/internal/controller/scoring"
-	"billionmail-core/internal/controller/domainhealth"
-	"billionmail-core/internal/controller/dashboard"
 	"billionmail-core/internal/controller/askai"
 	"billionmail-core/internal/controller/batch_mail"
 	"billionmail-core/internal/controller/campaign"
