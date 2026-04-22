@@ -48,7 +48,7 @@ type AlertItem struct {
 func (s *ColdDashboardService) GetDashboardStats(ctx context.Context) (*DashboardStats, error) {
 	stats := &DashboardStats{}
 
-	now := g.DB().GetCore().Time().Unix()
+	now := time.Now().Unix()
 	dayAgo := now - 86400
 	weekAgo := now - 604800
 	monthAgo := now - 2592000

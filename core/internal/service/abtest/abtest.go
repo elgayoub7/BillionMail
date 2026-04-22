@@ -221,7 +221,7 @@ func (s *AbTestService) CheckWinner(ctx context.Context, abTestId int) (bool, in
 		_, err = g.DB().Model("bm_ab_tests").Where("id = ?", abTestId).Update(g.Map{
 			"winner_variant": winner,
 			"status":         2,
-			"completed_at":   g.DB().GetCore().Time().Unix(),
+			"completed_at":   time.Now().Unix(),
 		})
 		if err != nil {
 			return false, -1, err
@@ -238,7 +238,7 @@ func (s *AbTestService) PickWinner(ctx context.Context, abTestId, winnerVariant 
 	_, err := g.DB().Model("bm_ab_tests").Where("id = ?", abTestId).Update(g.Map{
 		"winner_variant": winnerVariant,
 		"status":         2,
-		"completed_at":   g.DB().GetCore().Time().Unix(),
+		"completed_at":   time.Now().Unix(),
 	})
 	return err
 }

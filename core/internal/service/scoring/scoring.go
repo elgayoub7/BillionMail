@@ -3,6 +3,7 @@ package scoring
 import (
 	"context"
 
+t"time"
 	"github.com/gogf/gf/v2/frame/g"
 
 	"billionmail-core/internal/model/entity"
@@ -39,7 +40,7 @@ func (s *ScoringService) RecordEngagement(ctx context.Context, email string, eve
 		return nil
 	}
 
-	now := g.DB().GetCore().Time().Unix()
+	now := time.Now().Unix()
 	_, err = g.DB().Exec(ctx, `
 		UPDATE bm_lead_scores
 		SET `+field+` = `+field+` + 1,

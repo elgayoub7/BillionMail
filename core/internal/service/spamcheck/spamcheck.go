@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strings"
 
+t"time"
 	"github.com/gogf/gf/v2/frame/g"
 )
 
@@ -140,7 +141,7 @@ func (s *SpamCheckService) CheckBeforeSend(ctx context.Context, taskId, stepId i
 
 // SaveResult persists spam check result
 func (s *SpamCheckService) SaveResult(ctx context.Context, taskId, stepId int, result *SpamResult) {
-	now := g.DB().GetCore().Time().Unix()
+	now := time.Now().Unix()
 	isBlocked := 0
 	if result.IsBlocked {
 		isBlocked = 1
