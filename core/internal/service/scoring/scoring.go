@@ -3,7 +3,7 @@ package scoring
 import (
 	"context"
 
-t"time"
+"time"
 	"github.com/gogf/gf/v2/frame/g"
 
 	"billionmail-core/internal/model/entity"

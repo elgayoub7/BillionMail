@@ -192,7 +192,7 @@ func isUrlSafe(rawUrl string) bool {
 	// Block private/internal IP ranges and localhost
 	ip := net.ParseIP(host)
 	if ip != nil {
-		if ip.IsLoopback() || ip.IsPrivate() || ip.IsUnspecified() || ip.IsLinkLocalLocal() {
+		if ip.IsLoopback() || ip.IsPrivate() || ip.IsUnspecified() || ip.IsLinkLocalUnicast() {
 			return false
 		}
 	}
