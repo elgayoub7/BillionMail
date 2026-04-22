@@ -15,6 +15,9 @@ import (
 	"billionmail-core/internal/service/relay"
 	"billionmail-core/internal/service/sequence"
 	"billionmail-core/internal/service/video_gen"
+	"billionmail-core/internal/service/abtest"
+	"billionmail-core/internal/service/bounce"
+	"billionmail-core/internal/service/domainhealth"
 	"billionmail-core/internal/service/warmup"
 	"context"
 	"time"
@@ -108,6 +111,24 @@ func Start(ctx context.Context) (err error) {
 	// Sequence: update enrollments from completed email_tasks
 	gtimer.Add(1*time.Minute, func() {
 		sequence.UpdateEnrollmentsFromCompletedTasks(ctx)
+	})
+
+	// AB test: check running tests for auto-winner
+	gtimer.Add(5*time.Minute, func() {
+		abtest.AbTest().ProcessRunningTests(ctx)
+	})
+
+	// Bounce handler: process new bounces from mailstat
+	gtimer.Add(10*time.Minute, func() {
+		bounce.BounceHandler().ProcessBounceLog(ctx)
+	})
+
+	// Domain health check: every 6 hours
+	gtimer.AddOnce(30*time.Second, func() {
+		domainhealth.DomainHealth().CheckAllDomains(ctx)
+	})
+	gtimer.Add(6*time.Hour, func() {
+		domainhealth.DomainHealth().CheckAllDomains(ctx)
 	})
 
 	// Idle actuators are cleaned every 10 minutes

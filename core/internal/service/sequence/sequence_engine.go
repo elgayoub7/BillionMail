@@ -182,6 +182,29 @@ func checkCondition(ctx context.Context, step *v1.SequenceStepItem, email string
 			Where("status", "bounced").
 			Count()
 		return count > 0, nil
+
+	case "replied":
+		count, _ := g.DB().Model("bm_sequence_enrollments").
+			Where("email", email).
+			Where("sequence_id", sequenceId).
+			Where("total_opens > 0").
+			Count()
+		if count > 0 {
+			// Also check for reply tracking via In-Reply-To headers
+			replyCount, _ := g.DB().Model("bm_bounce_records").
+				Where("email", email).
+				Where("bounce_type", "reply").
+				Count()
+			return replyCount > 0 || count > 0, nil
+		}
+		return false, nil
+
+	case "not_replied":
+		count, _ := g.DB().Model("bm_bounce_records").
+			Where("email", email).
+			Where("bounce_type", "reply").
+			Count()
+		return count == 0, nil
 	}
 
 	return false, nil

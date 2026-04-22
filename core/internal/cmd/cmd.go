@@ -3,6 +3,10 @@ package cmd
 import (
 	"billionmail-core/internal/consts"
 	"billionmail-core/internal/controller/abnormal_recipient"
+	"billionmail-core/internal/controller/abtest"
+	"billionmail-core/internal/controller/scoring"
+	"billionmail-core/internal/controller/domainhealth"
+	"billionmail-core/internal/controller/dashboard"
 	"billionmail-core/internal/controller/askai"
 	"billionmail-core/internal/controller/batch_mail"
 	"billionmail-core/internal/controller/campaign"
@@ -24,6 +28,7 @@ import (
 	"billionmail-core/internal/controller/tags"
 	video_outreach_ctrl "billionmail-core/internal/controller/video_outreach"
 	sequence_ctrl "billionmail-core/internal/controller/sequence"
+	abtest_ctrl "billionmail-core/internal/controller/abtest"
 	"billionmail-core/internal/service/database_initialization"
 	docker "billionmail-core/internal/service/dockerapi"
 	"billionmail-core/internal/service/maillog_stat"
@@ -306,6 +311,10 @@ var (
 					tags.NewV1(),
 					video_outreach_ctrl.NewV1(),
 					sequence_ctrl.NewV1(),
+					abtest_ctrl.NewV1(),
+					scoring.NewV1(),
+					domainhealth.NewV1(),
+					dashboard.NewV1(),
 				)
 			})
 
