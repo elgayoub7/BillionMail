@@ -3,6 +3,7 @@ package sequence
 import (
 	"context"
 
+	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/frame/g"
 
 	"billionmail-core/internal/service/scoring"
