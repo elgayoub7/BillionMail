@@ -2,6 +2,7 @@ package dashboard
 
 import (
 	"context"
+	"time"
 
 	"github.com/gogf/gf/v2/frame/g"
 )
@@ -41,7 +42,7 @@ type ActiveSequenceMetrics struct {
 type AlertItem struct {
 	Type    string `json:"type"`
 	Message string `json:"message"`
-	Time    int64  `json:"time"`
+	Time    int64  `json:`
 }
 
 // GetDashboardStats aggregates global stats
