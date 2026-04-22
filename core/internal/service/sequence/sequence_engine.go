@@ -37,9 +37,7 @@ func advanceReadyEnrollments(ctx context.Context) {
 	}
 
 	var enrollments []enrollmentRow
-	err := g.DB().Model("bm_sequence_enrollments e").
-		Join("bm_sequences s", "s.id = e.sequence_id").
-		Join("bm_sequence_steps st", "st.sequence_id = s.id AND st.step_order = e.current_step").
+	err := g.DB().Model("bm_sequence_enrollments e").LeftJoin("bm_sequences s", "s.id = e.sequence_id").LeftJoin("bm_sequence_steps st", "st.sequence_id = s.id AND st.step_order = e.current_step").
 		Fields("e.id, e.sequence_id, e.current_step, e.current_step_entered_at").
 		Where("e.status", 0).
 		Where("s.status", 1).
@@ -86,9 +84,7 @@ func evaluateConditionSteps(ctx context.Context) {
 	}
 
 	var enrollments []enrollmentRow
-	err := g.DB().Model("bm_sequence_enrollments e").
-		Join("bm_sequences s", "s.id = e.sequence_id").
-		Join("bm_sequence_steps st", "st.sequence_id = s.id AND st.step_order = e.current_step").
+	err := g.DB().Model("bm_sequence_enrollments e").LeftJoin("bm_sequences s", "s.id = e.sequence_id").LeftJoin("bm_sequence_steps st", "st.sequence_id = s.id AND st.step_order = e.current_step").
 		Fields("e.id, e.sequence_id, e.email, e.current_step, e.current_step_entered_at").
 		Where("e.status", 0).
 		Where("s.status", 1).
@@ -214,9 +210,7 @@ func checkCondition(ctx context.Context, step *v1.SequenceStepItem, email string
 func getEmailTaskIdsForEnrollmentStep(ctx context.Context, sequenceId, stepOrder int, email string) ([]int, error) {
 	var taskIds []int
 	err := g.DB().Model("bm_sequence_email_tasks").
-		Fields("DISTINCT email_task_id").
-		Join("bm_sequence_enrollments e", "e.id = bm_sequence_email_tasks.enrollment_id").
-		Join("bm_sequence_steps st", "st.id = bm_sequence_email_tasks.step_id").
+		Fields("DISTINCT email_task_id").LeftJoin("bm_sequence_enrollments e", "e.id = bm_sequence_email_tasks.enrollment_id").LeftJoin("bm_sequence_steps st", "st.id = bm_sequence_email_tasks.step_id").
 		Where("bm_sequence_email_tasks.sequence_id", sequenceId).
 		Where("st.step_order", stepOrder).
 		Where("e.email", email).
@@ -240,9 +234,7 @@ func createBatchStepEmails(ctx context.Context) {
 	}
 
 	var groups []pendingGroup
-	err := g.DB().Model("bm_sequence_enrollments e").
-		Join("bm_sequences s", "s.id = e.sequence_id").
-		Join("bm_sequence_steps st", "st.sequence_id = s.id AND st.step_order = e.current_step").
+	err := g.DB().Model("bm_sequence_enrollments e").LeftJoin("bm_sequences s", "s.id = e.sequence_id").LeftJoin("bm_sequence_steps st", "st.sequence_id = s.id AND st.step_order = e.current_step").
 		LeftJoin("bm_sequence_email_tasks set", "set.enrollment_id = e.id AND set.step_id = st.id AND set.status = 0").
 		Fields(`DISTINCT s.id as sequence_id, st.id as step_id, st.step_order, st.subject, st.template_id,
 			s.addresser, s.full_name, s.track_open, s.track_click, s.unsubscribe as unsub`).
@@ -346,8 +338,7 @@ func UpdateEnrollmentsFromCompletedTasks(ctx context.Context) {
 
 	var tasks []completedTask
 	err := g.DB().Model("bm_sequence_email_tasks").
-		Fields("DISTINCT email_task_id").
-		Join("email_tasks et", "et.id = bm_sequence_email_tasks.email_task_id").
+		Fields("DISTINCT email_task_id").LeftJoin("email_tasks et", "et.id = bm_sequence_email_tasks.email_task_id").
 		Where("et.task_process", 2).
 		Where("bm_sequence_email_tasks.status", 0).
 		Limit(100).

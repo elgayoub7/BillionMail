@@ -59,8 +59,7 @@ func RecordAbTestEvent(ctx context.Context, sequenceId, stepId int, email string
 	var assignment struct {
 		Variant int `json:"variant"`
 	}
-	err = g.DB().Model("bm_ab_test_assignments a").
-		Join("bm_sequence_enrollments e", "e.id = a.enrollment_id").
+	err = g.DB().Model("bm_ab_test_assignments a").LeftJoin("bm_sequence_enrollments e", "e.id = a.enrollment_id").
 		Where("a.ab_test_id = ? AND e.email = ?", test.Id, email).
 		Fields("a.variant").
 		Scan(&assignment)
