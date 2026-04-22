@@ -380,15 +380,15 @@ func UpdateEnrollmentsFromCompletedTasks(ctx context.Context) {
 			}).Update()
 		}
 
-		g.DB().Raw(fmt.Sprintf(`
+		g.DB().Exec(ctx, fmt.Sprintf(`
 			UPDATE bm_sequence_steps SET
 				sent_count = sent_count + (SELECT COUNT(*) FROM bm_sequence_email_tasks WHERE step_id = bm_sequence_steps.id AND email_task_id = %d),
 				update_time = %d
 			WHERE id IN (SELECT DISTINCT step_id FROM bm_sequence_email_tasks WHERE email_task_id = %d)
-		`, t.EmailTaskId, now, t.EmailTaskId)).Exec()
+		`, t.EmailTaskId, now, t.EmailTaskId))
 
 		// Auto-exit enrollments whose contacts bounced
-		g.DB().Raw(fmt.Sprintf(`
+		g.DB().Exec(ctx, fmt.Sprintf(`
 			UPDATE bm_sequence_enrollments SET status = 3, completed_at = %d
 			WHERE id IN (
 				SELECT DISTINCT enrollment_id FROM bm_sequence_email_tasks
@@ -398,7 +398,7 @@ func UpdateEnrollmentsFromCompletedTasks(ctx context.Context) {
 				SELECT DISTINCT recipient FROM mailstat_send_mails
 				WHERE campaign_id = %d AND status = 'bounced'
 			)
-		`, now, t.EmailTaskId, t.EmailTaskId)).Exec()
+		`, now, t.EmailTaskId, t.EmailTaskId))
 	}
 }
 
