@@ -45,9 +45,6 @@ LABEL maintainer="https://github.com/elgayoub7/BillionMail"
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 
-# Create non-root user
-RUN addgroup -S billionmail && adduser -S billionmail -G billionmail
-
 # Copy Go binary
 COPY --from=go-builder /build/billionmail /opt/billionmail/core/billionmail
 
@@ -85,10 +82,6 @@ RUN apk add --no-cache \
 
 COPY Dockerfiles/core/supervisord.conf /etc/supervisor/supervisord.conf
 COPY Dockerfiles/core/fail2ban.conf /etc/fail2ban/fail2ban.conf
-
-RUN chown -R billionmail:billionmail /opt/billionmail /stop-supervisor.sh /core.sh /restart_fail2ban.sh
-
-USER billionmail
 
 ENTRYPOINT ["/core.sh"]
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
