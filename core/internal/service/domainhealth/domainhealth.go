@@ -26,6 +26,22 @@ type DomainHealthResult struct {
 	Issues      []string `json:"issues"`
 }
 
+// DomainHealthRow is a typed struct for DB row serialization (fixes gdb.Record null JSON issue)
+type DomainHealthRow struct {
+	Id          int    `json:"id"`
+	Domain      string `json:"domain"`
+	SPFStatus   string `json:"spf_status"`
+	DKIMStatus  string   `json:"dkim_status"`
+	DMARCStatus string   `json:"dmarc_status"`
+	MXStatus    string   `json:"mx_status"`
+	SPFRecord   string `json:"spf_record"`
+	DKIMRecord  string `json:"dkim_record"`
+	DMARCRecord string `json:"dmarc_record"`
+	MXRecords   string `json:"mx_records"`
+	Issues      string `json:"issues"`
+	LastChecked int64  `json:"last_checked"`
+}
+
 // CheckDomainHealth performs DNS lookups for SPF, DKIM, DMARC, MX
 func (s *DomainHealthService) CheckDomainHealth(ctx context.Context, domain string) (*DomainHealthResult, error) {
 	result := &DomainHealthResult{
@@ -145,24 +161,26 @@ func (s *DomainHealthService) CheckAllDomains(ctx context.Context) ([]DomainHeal
 }
 
 // GetDomainHealth returns cached health for a domain
-func (s *DomainHealthService) GetDomainHealth(ctx context.Context, domain string) (map[string]interface{}, error) {
-	result, err := g.DB().Model("bm_domain_health").Where("domain = ?", domain).One()
-	
-	return result, err
+func (s *DomainHealthService) GetDomainHealth(ctx context.Context, domain string) (*DomainHealthRow, error) {
+	var row DomainHealthRow
+	err := g.DB().Model("bm_domain_health").Where("domain = ?", domain).Scan(&row)
+	if err != nil {
+		return nil, err
+	}
+	if row.Id == 0 {
+		return nil, nil
+	}
+	return &row, nil
 }
 
 // GetAllDomainHealth returns cached health for all domains
-func (s *DomainHealthService) GetAllDomainHealth(ctx context.Context) (interface{}, error) {
-	record, err := g.DB().Raw(ctx, "SELECT id, domain, spf_status, dkim_status, dmarc_status, mx_status FROM bm_domain_health ORDER BY domain")
+func (s *DomainHealthService) GetAllDomainHealth(ctx context.Context) ([]DomainHealthRow, error) {
+	var rows []DomainHealthRow
+	err := g.DB().Model("bm_domain_health").Order("domain").Scan(&rows)
 	if err != nil {
-		g.Log().Errorf(ctx, "DomainHealth Raw SQL error: %v", err)
+		g.Log().Errorf(ctx, "DomainHealth query error: %v", err)
 		return nil, err
 	}
-	all, err := record.All()
-	if err != nil {
-		g.Log().Errorf(ctx, "DomainHealth All() error: %v", err)
-		return nil, err
-	}
-	g.Log().Infof(ctx, "DomainHealth rows: %d, data: %v", len(all), all)
-	return all, nil
+	g.Log().Infof(ctx, "DomainHealth rows: %d", len(rows))
+	return rows, nil
 }
