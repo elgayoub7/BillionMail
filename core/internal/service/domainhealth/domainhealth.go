@@ -151,27 +151,18 @@ func (s *DomainHealthService) GetDomainHealth(ctx context.Context, domain string
 	return result, err
 }
 
-// DomainHealthRow represents a row from bm_domain_health
-type DomainHealthRow struct {
-	Id          int    `json:"id"`
-	Domain      string `json:"domain"`
-	SpfStatus   string `json:"spf_status"`
-	DkimStatus  string `json:"dkim_status"`
-	DmarcStatus string `json:"dmarc_status"`
-	MxStatus    string `json:"mx_status"`
-	SpfRecord   string `json:"spf_record"`
-	DkimRecord  string `json:"dkim_record"`
-	DmarcRecord string `json:"dmarc_record"`
-	MxRecords   string `json:"mx_records"`
-	LastChecked int64  `json:"last_checked"`
-}
-
 // GetAllDomainHealth returns cached health for all domains
 func (s *DomainHealthService) GetAllDomainHealth(ctx context.Context) (interface{}, error) {
-	var rows []DomainHealthRow
-	err := g.DB().Model("bm_domain_health").Order("domain ASC").Scan(\&rows)
+	record, err := g.DB().Raw(ctx, "SELECT id, domain, spf_status, dkim_status, dmarc_status, mx_status FROM bm_domain_health ORDER BY domain")
 	if err != nil {
+		g.Log().Errorf(ctx, "DomainHealth Raw SQL error: %v", err)
 		return nil, err
 	}
-	return rows, nil
+	all, err := record.All()
+	if err != nil {
+		g.Log().Errorf(ctx, "DomainHealth All() error: %v", err)
+		return nil, err
+	}
+	g.Log().Infof(ctx, "DomainHealth rows: %d, data: %v", len(all), all)
+	return all, nil
 }
