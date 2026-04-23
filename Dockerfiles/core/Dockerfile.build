@@ -45,6 +45,9 @@ LABEL maintainer="https://github.com/elgayoub7/BillionMail"
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 
+# Create user for supervisord (runs as root but supervisord refs billionmail user)
+RUN addgroup -S billionmail && adduser -S billionmail -G billionmail
+
 # Copy Go binary
 COPY --from=go-builder /build/billionmail /opt/billionmail/core/billionmail
 
