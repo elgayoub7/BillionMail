@@ -43,7 +43,7 @@
 
 <script lang="ts" setup>
 import { ref } from 'vue'
-import { useMessage } from 'naive-ui'
+import { Message } from '@/utils'
 import { createAbTest } from '@/api/modules/abtest'
 
 const props = defineProps<{
@@ -56,7 +56,7 @@ const emit = defineEmits<{
 	created: []
 }>()
 
-const message = useMessage()
+// using Message from utils
 const creating = ref(false)
 
 const show = computed({
@@ -81,11 +81,11 @@ const criteriaOptions = [
 
 async function handleCreate() {
 	if (!props.sequenceId) {
-		message.error('Select a sequence first')
+		Message.error('Select a sequence first')
 		return
 	}
 	if (!form.value.variant_a.subject || !form.value.variant_b.subject) {
-		message.error('Both variants need a subject')
+		Message.error('Both variants need a subject')
 		return
 	}
 	creating.value = true
@@ -99,11 +99,11 @@ async function handleCreate() {
 			variant_a: form.value.variant_a,
 			variant_b: form.value.variant_b,
 		})
-		message.success('A/B test created')
+		Message.success('A/B test created')
 		emit('created')
 		show.value = false
 	} catch (e) {
-		message.error('Failed to create test')
+		Message.error('Failed to create test')
 	} finally {
 		creating.value = false
 	}
