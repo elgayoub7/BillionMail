@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
-import { is, isDev } from '@/utils'
+import { isDev } from '@/utils'
 
-// Routes reflect list
+// Routes reflect list (used for sidebar ordering)
 const routesReflectList = [
 	'Overview',
 	'Cold Dashboard',
@@ -12,7 +12,6 @@ const routesReflectList = [
 	'Sequences',
 	'Lead Scoring',
 	'AB Tests',
-	'Enrichment',
 	'MailDomain',
 	'Domain Health',
 	'MailBoxes',
@@ -23,30 +22,56 @@ const routesReflectList = [
 	'Video Outreach',
 ]
 
-// Import routes from modules
-const modules = import.meta.webpackContext('./modules', {
-	// Whether to search for subdirectories
-	recursive: false,
-	regExp: /^[^.]+\.ts$/,
-})
+// Static imports for all route modules
+// Replaces broken import.meta.webpackContext (only loads 1/17 modules in Rspack)
+import overviewRoute from './modules/overview'
+import coldDashboardRoute from './modules/cold-dashboard'
+import marketRoute from './modules/market'
+import templateRoute from './modules/template'
+import apiRoute from './modules/api'
+import contactsRoute from './modules/contacts'
+import sequencesRoute from './modules/sequences'
+import scoringRoute from './modules/scoring'
+import abtestRoute from './modules/abtest'
+import mailDomainRoute from './modules/domain'
+import domainHealthRoute from './modules/domain-health'
+import mailboxRoute from './modules/mailbox'
+import smtpRoute from './modules/smtp'
+import logsRoute from './modules/logs'
+import settingsRoute from './modules/settings'
+import automationRoute from './modules/automation'
+import videoOutreachRoute from './modules/video-outreach'
 
-// Module routes
-export let menuList: RouteRecordRaw[] = []
+const moduleRoutes: RouteRecordRaw[] = [
+	overviewRoute,
+	coldDashboardRoute,
+	marketRoute,
+	templateRoute,
+	apiRoute,
+	contactsRoute,
+	sequencesRoute,
+	scoringRoute,
+	abtestRoute,
+	mailDomainRoute,
+	domainHealthRoute,
+	mailboxRoute,
+	smtpRoute,
+	logsRoute,
+	settingsRoute,
+	automationRoute,
+	videoOutreachRoute,
+]
 
-// Iterate through the module list to generate module routes
-for (const path of modules.keys()) {
-	const mod = modules(path)
-	if (is<{ default: RouteRecordRaw }>(mod, 'Module')) {
-		menuList.push(mod.default)
-	}
-}
-
-// Sort module routes
-menuList = menuList.reduce((p: RouteRecordRaw[], v: RouteRecordRaw) => {
-	const routeIndex = routesReflectList.findIndex(item => item == v.meta!.title)
-	p[routeIndex] = v
-	return p
-}, [] as RouteRecordRaw[])
+// Sort module routes according to routesReflectList order, filter gaps
+export let menuList: RouteRecordRaw[] = moduleRoutes
+	.reduce((p: RouteRecordRaw[], v: RouteRecordRaw) => {
+		const routeIndex = routesReflectList.findIndex(item => item == v.meta!.title)
+		if (routeIndex >= 0) {
+			p[routeIndex] = v
+		}
+		return p
+	}, [] as RouteRecordRaw[])
+	.filter(Boolean)
 
 const otherArray: RouteRecordRaw[] = []
 
