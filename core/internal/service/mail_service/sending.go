@@ -379,7 +379,7 @@ func (e *EmailSender) doSend(message Message, recipients []string) error {
 		if strings.HasPrefix(v, "=?") {
 			from = fmt.Sprintf("%s <%s>", v, e.Email) // encoded word, no quotes
 		} else {
-			from = fmt.Sprintf(""%s" <%s>", v, e.Email) // ASCII name, quoted
+			from = fmt.Sprintf("\"%s\" <%s>", v, e.Email) // ASCII name, quoted
 		}
 		delete(message.Headers, "RealName")
 	}
