@@ -169,6 +169,10 @@ type TaskExecutor struct {
 	// pause/resume control
 	pauseChan  chan struct{}
 	resumeChan chan struct{}
+
+	// cold mail features
+	senderRotation *SenderRotation
+	scheduleChecker *ScheduleChecker
 }
 
 const (
@@ -200,7 +204,8 @@ func NewTaskExecutor(ctx context.Context) *TaskExecutor {
 		startTime:      time.Now(),
 		pauseChan:      make(chan struct{}, 1),
 		resumeChan:     make(chan struct{}, 1),
-		rateController: NewSimpleRateController(1000),
+		rateController:  NewSimpleRateController(1000),
+		scheduleChecker: NewScheduleChecker(),
 	}
 
 	return executor
@@ -268,6 +273,12 @@ func (e *TaskExecutor) ProcessTask(ctx context.Context) error {
 	}
 
 	e.ctx = context.WithValue(e.ctx, "warmupAssociated", warmupAssociated)
+
+	// initialize sender rotation (if sender pool configured)
+	if task.SenderPool != "" && task.SenderPool != "[]" {
+		e.senderRotation = NewSenderRotation(task.SenderPool, task.DailyLimitPerSender, task.Id, task.CurrentSenderIndex)
+		g.Log().Infof(ctx, "task %d: sender rotation enabled, pool size: %d, daily limit: %d", task.Id, e.senderRotation.PoolSize(), task.DailyLimitPerSender)
+	}
 
 	// configure rate controller
 	e.configureRateController(task)
@@ -605,12 +616,22 @@ func (e *TaskExecutor) processTaskRecipients(ctx context.Context, task *entity.E
 	}()
 
 	for {
-		// check if context is canceled
 		select {
 		case <-ctx.Done():
 			g.Log().Info(ctx, "context canceled, stop task execution:", ctx.Err())
 			return ctx.Err()
 		default:
+		}
+
+		// schedule check: time window + day of week
+		if !e.scheduleChecker.IsWithinSchedule(task) {
+			if !e.scheduleChecker.SleepUntilNextWindow(ctx, task) {
+				return ctx.Err() // context canceled during sleep
+			}
+			// reload task config after waking up
+			if updatedTask, err := GetTaskInfo(ctx, task.Id); err == nil && updatedTask != nil {
+				task = updatedTask
+			}
 		}
 
 		// check pause status
@@ -772,9 +793,17 @@ func (e *TaskExecutor) processRecipientBatch(ctx context.Context, task *entity.E
 				safeClose() // safe close channel
 				return err
 			}
-			// record error but continue
 			g.Log().Debugf(ctx, "Rate limit wait error: %v", err)
+		}
 
+		// cold mail: delay between emails (anti-ban)
+		if task.SendDelay > 0 {
+			select {
+			case <-time.After(time.Duration(task.SendDelay) * time.Second):
+			case <-ctx.Done():
+				safeClose()
+				return ctx.Err()
+			}
 		}
 
 		// check if recipient is allowed to send with warmup
@@ -1195,10 +1224,23 @@ func (e *TaskExecutor) sendEmail(ctx context.Context, task *entity.EmailTask, re
 		currentTask = e.taskConfig
 	}
 
+	// sender rotation: get next sender from pool if configured
+	activeSender := currentTask.Addresser
+	activeName := currentTask.FullName
+	if e.senderRotation != nil {
+		poolSender, err := e.senderRotation.GetNextSender(ctx)
+		if err != nil {
+			g.Log().Warningf(ctx, "Sender rotation failed: %v", err)
+		} else if poolSender != nil {
+			activeSender = poolSender.Email
+			activeName = poolSender.Name
+		}
+	}
+
 	// get rendered content and subject
 	renderedContent, renderedSubject := e.personalizeEmail(ctx, content, currentTask, recipient)
 
-	sender, err := mail_service.NewEmailSenderWithLocal(currentTask.Addresser)
+	sender, err := mail_service.NewEmailSenderWithLocal(activeSender)
 	if err != nil {
 		g.Log().Error(ctx, "create email sender failed: %v", err)
 		return &SendResult{
@@ -1212,7 +1254,7 @@ func (e *TaskExecutor) sendEmail(ctx context.Context, task *entity.EmailTask, re
 	messageID := sender.GenerateMessageID()
 
 	//Tracking emails
-	baseURL := domains.GetBaseURLBySender(currentTask.Addresser)
+	baseURL := domains.GetBaseURLBySender(activeSender)
 	mail_tracker := maillog_stat.NewMailTracker(renderedContent, currentTask.Id, messageID, recipient.Recipient, baseURL)
 	if currentTask.TrackClick == 1 {
 		mail_tracker.TrackLinks()
@@ -1226,8 +1268,10 @@ func (e *TaskExecutor) sendEmail(ctx context.Context, task *entity.EmailTask, re
 	message := mail_service.NewMessage(renderedSubject, renderedContent)
 	message.SetMessageID(messageID)
 
-	// set sender display name
-	if currentTask.FullName != "" {
+	// set sender display name (use rotated sender name if available)
+	if activeName != "" {
+		message.SetRealName(activeName)
+	} else if currentTask.FullName != "" {
 		message.SetRealName(currentTask.FullName)
 	}
 
@@ -1243,6 +1287,11 @@ func (e *TaskExecutor) sendEmail(ctx context.Context, task *entity.EmailTask, re
 			Success:     false,
 			Error:       fmt.Errorf("send email failed: %w", err),
 		}
+	}
+
+	// track daily send count for sender rotation
+	if e.senderRotation != nil {
+		IncrementSenderDailyCount(ctx, activeSender)
 	}
 
 	return &SendResult{

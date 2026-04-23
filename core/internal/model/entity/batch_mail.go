@@ -92,6 +92,16 @@ type EmailTask struct {
 	UseTagFilter    int    `json:"use_tag_filter"  dc:"Use Tag Filter (0: no, 1: yes)"`
 }
 
+	// Cold mail scheduling fields
+	SendDelay           int    `json:"send_delay"            dc:"Delay between emails in seconds (0=no delay)" orm:"send_delay"`
+	ScheduleStartHour   int    `json:"schedule_start_hour"   dc:"Allowed sending start hour 0-23 (0=no restriction)" orm:"schedule_start_hour"`
+	ScheduleEndHour     int    `json:"schedule_end_hour"     dc:"Allowed sending end hour 0-24 (24=no restriction)" orm:"schedule_end_hour"`
+	ScheduleDays        string `json:"schedule_days"         dc:"Allowed weekdays ISO [1-7], 1=Mon, 7=Sun" orm:"schedule_days"`
+	SenderPool          string `json:"sender_pool"           dc:"JSON array of {email,name} for rotation" orm:"sender_pool"`
+	DailyLimitPerSender int    `json:"daily_limit_per_sender" dc:"Max emails per sender per day (0=unlimited)" orm:"daily_limit_per_sender"`
+	CurrentSenderIndex  int    `json:"current_sender_index"  dc:"Current sender index for round-robin" orm:"current_sender_index"`
+}
+
 // MarshalJSON implements custom JSON marshaling to convert TagIdsRaw to TagIds array
 func (e *EmailTask) MarshalJSON() ([]byte, error) {
 	// Create a temporary struct with all fields
@@ -122,6 +132,15 @@ func (e *EmailTask) AfterFind() {
 		if err == nil {
 			e.TagIds = tagIds
 		}
+	}
+	if e.ScheduleStartHour == 0 && e.ScheduleEndHour == 0 {
+		e.ScheduleEndHour = 24
+	}
+	if e.ScheduleDays == "" {
+		e.ScheduleDays = "[1,2,3,4,5,6,7]"
+	}
+	if e.SenderPool == "" {
+		e.SenderPool = "[]"
 	}
 }
 

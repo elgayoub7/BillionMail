@@ -155,6 +155,12 @@ type CreateTaskReq struct {
 
 	TagIds   []int  `json:"tag_ids" dc:"tag ids for filtering contacts"`
 	TagLogic string `json:"tag_logic" v:"in:AND,OR,NOT" dc:"tag logic (AND: must have all tags, OR: have any tag, NOT)" default:"AND"`
+	SendDelay           int    `json:"send_delay"            dc:"Delay between emails in seconds" default:"0"`
+	ScheduleStartHour   int    `json:"schedule_start_hour"   dc:"Schedule start hour 0-23" default:"0"`
+	ScheduleEndHour     int    `json:"schedule_end_hour"     dc:"Schedule end hour 0-24" default:"24"`
+	ScheduleDays        string `json:"schedule_days"         dc:"Allowed weekdays JSON [1-7] ISO" default:"[1,2,3,4,5,6,7]"`
+	SenderPool          string `json:"sender_pool"           dc:"Sender pool JSON for rotation" default:"[]"`
+	DailyLimitPerSender int    `json:"daily_limit_per_sender" dc:"Max emails per sender per day" default:"0"`
 }
 
 type CreateTaskRes struct {
@@ -281,6 +287,12 @@ type UpdateTaskInfoReq struct {
 	StartTime     int    `json:"start_time" dc:"start time"`
 	TagIds        []int  `json:"tag_ids" dc:"tag ids for filtering contacts"`
 	TagLogic      string `json:"tag_logic" v:"in:AND,OR,NOT" dc:"tag logic (AND: must have all tags, OR: have any tag, NOT)"`
+	SendDelay           int    `json:"send_delay"            dc:"Delay between emails in seconds"`
+	ScheduleStartHour   int    `json:"schedule_start_hour"   dc:"Schedule start hour 0-23"`
+	ScheduleEndHour     int    `json:"schedule_end_hour"     dc:"Schedule end hour 0-24"`
+	ScheduleDays        string `json:"schedule_days"         dc:"Allowed weekdays JSON [1-7]"`
+	SenderPool          string `json:"sender_pool"           dc:"Sender pool JSON for rotation"`
+	DailyLimitPerSender int    `json:"daily_limit_per_sender" dc:"Max emails per sender per day"`
 }
 type UpdateTaskInfoRes struct {
 	api_v1.StandardRes
