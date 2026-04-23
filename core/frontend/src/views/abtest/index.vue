@@ -79,7 +79,7 @@
 
 <script lang="ts" setup>
 import { onMounted, ref } from 'vue'
-import { useMessage } from 'naive-ui'
+import { Message } from '@/utils'
 import { getSequenceList } from '@/api/modules/sequences/sequence'
 import { listAbTests, deleteAbTest, pickWinner } from '@/api/modules/abtest'
 import ResultsModal from './components/ResultsModal.vue'
@@ -98,7 +98,7 @@ interface AbTest {
 	completed_at: number
 }
 
-const message = useMessage()
+// using Message from utils
 
 const selectedSequence = ref<number | null>(null)
 const sequenceOptions = ref<Array<{ label: string; value: number }>>([])
@@ -151,20 +151,20 @@ function viewResults(test: AbTest) {
 async function handlePickWinner(test: AbTest) {
 	try {
 		await pickWinner({ id: test.id, winner_variant: 0 }) // Default pick A
-		message.success('Winner picked')
+		Message.success('Winner picked')
 		fetchTestsForSequence()
 	} catch (e) {
-		message.error('Failed to pick winner')
+		Message.error('Failed to pick winner')
 	}
 }
 
 async function handleDelete(test: AbTest) {
 	try {
 		await deleteAbTest({ id: test.id })
-		message.success('Test deleted')
+		Message.success('Test deleted')
 		fetchTestsForSequence()
 	} catch (e) {
-		message.error('Failed to delete test')
+		Message.error('Failed to delete test')
 	}
 }
 

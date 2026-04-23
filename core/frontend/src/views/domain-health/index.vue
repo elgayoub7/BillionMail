@@ -44,7 +44,8 @@
 
 <script lang="ts" setup>
 import { h, onMounted, ref } from 'vue'
-import { NTag, NButton, useMessage } from 'naive-ui'
+import { NTag, NButton } from 'naive-ui'
+import { Message } from '@/utils'
 import { listDomainHealth, checkAllDomains, checkDomain } from '@/api/modules/domain-health'
 
 interface DomainHealth {
@@ -61,7 +62,7 @@ interface DomainHealth {
 	mx_records: string
 }
 
-const message = useMessage()
+// using Message from utils
 const domains = ref<DomainHealth[]>([])
 const loading = ref(false)
 const checkingAll = ref(false)
@@ -162,10 +163,10 @@ async function handleCheckAll() {
 	checkingAll.value = true
 	try {
 		await checkAllDomains()
-		message.success('All domains checked')
+		Message.success('All domains checked')
 		await fetchDomains()
 	} catch (e) {
-		message.error('Domain check failed')
+		Message.error('Domain check failed')
 	} finally {
 		checkingAll.value = false
 	}
@@ -174,10 +175,10 @@ async function handleCheckAll() {
 async function handleCheckSingle(domain: string) {
 	try {
 		await checkDomain({ domain })
-		message.success(`${domain} checked`)
+		Message.success(`${domain} checked`)
 		await fetchDomains()
 	} catch (e) {
-		message.error(`Check failed for ${domain}`)
+		Message.error(`Check failed for ${domain}`)
 	}
 }
 

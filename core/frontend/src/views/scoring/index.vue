@@ -54,7 +54,8 @@
 
 <script lang="ts" setup>
 import { h, onMounted, ref, watch } from 'vue'
-import { NTag, NProgress, useMessage } from 'naive-ui'
+import { NTag, NProgress } from 'naive-ui'
+import { Message } from '@/utils'
 import { getScoringLeads, getScoringStats, recalculateScores } from '@/api/modules/scoring'
 import ScoreStatCard from './components/ScoreStatCard.vue'
 
@@ -80,7 +81,6 @@ interface LeadScore {
 	last_scored_at: number
 }
 
-const message = useMessage()
 const stats = ref<ScoringStats>({
 	cold_count: 0,
 	warm_count: 0,
@@ -209,11 +209,11 @@ async function handleRecalculate() {
 	recalculating.value = true
 	try {
 		await recalculateScores()
-		message.success('Scores recalculated')
+		Message.success('Scores recalculated')
 		await fetchStats()
 		await fetchLeads()
 	} catch (e) {
-		message.error('Recalculation failed')
+		Message.error('Recalculation failed')
 	} finally {
 		recalculating.value = false
 	}
