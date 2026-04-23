@@ -124,17 +124,17 @@ func (s *ScoringService) GetTopLeads(ctx context.Context, limit int) ([]entity.L
 func (s *ScoringService) GetStats(ctx context.Context) (*entity.ScoringStats, error) {
 	stats := &entity.ScoringStats{}
 
-	g.DB().Model("bm_lead_scores").Where("engagement_level", "cold").Count(&stats.ColdCount)
-	g.DB().Model("bm_lead_scores").Where("engagement_level", "warm").Count(&stats.WarmCount)
-	g.DB().Model("bm_lead_scores").Where("engagement_level", "hot").Count(&stats.HotCount)
-	g.DB().Model("bm_lead_scores").Where("engagement_level", "converted").Count(&stats.ConvertedCount)
+	g.DB().Model("bm_lead_scores").Ctx(ctx).Where("engagement_level", "cold").Count(&stats.ColdCount)
+	g.DB().Model("bm_lead_scores").Ctx(ctx).Where("engagement_level", "warm").Count(&stats.WarmCount)
+	g.DB().Model("bm_lead_scores").Ctx(ctx).Where("engagement_level", "hot").Count(&stats.HotCount)
+	g.DB().Model("bm_lead_scores").Ctx(ctx).Where("engagement_level", "converted").Count(&stats.ConvertedCount)
 	stats.TotalLeads = stats.ColdCount + stats.WarmCount + stats.HotCount + stats.ConvertedCount
 
 	if stats.TotalLeads > 0 {
 		var avg struct {
 			Avg float64 `json:"avg"`
 		}
-		g.DB().Model("bm_lead_scores").Fields("AVG(score) as avg").Scan(&avg)
+		g.DB().Model("bm_lead_scores").Ctx(ctx).Fields("AVG(score) as avg").Scan(&avg)
 		stats.AverageScore = avg.Avg
 	}
 
