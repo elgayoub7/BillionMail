@@ -374,7 +374,13 @@ func (e *EmailSender) doSend(message Message, recipients []string) error {
 	from := fmt.Sprintf("%s <%s>", strings.Split(e.Email, "@")[0], e.Email)
 
 	if v, exists := message.Headers["RealName"]; exists {
-		from = fmt.Sprintf("%s <%s>", v, e.Email)
+		// Proper display name: "Name" <email> for ASCII, encoded-word <email> for non-ASCII
+		// RFC 2047: encoded-words MUST NOT appear within quoted-string
+		if strings.HasPrefix(v, "=?") {
+			from = fmt.Sprintf("%s <%s>", v, e.Email) // encoded word, no quotes
+		} else {
+			from = fmt.Sprintf(""%s" <%s>", v, e.Email) // ASCII name, quoted
+		}
 		delete(message.Headers, "RealName")
 	}
 
@@ -383,13 +389,16 @@ func (e *EmailSender) doSend(message Message, recipients []string) error {
 		delete(message.Headers, "From")
 	}
 
+	// Debug: log From header for display name verification
+	g.Log().Debugf(context.Background(), "[MAIL] From header: %s, sender: %s", from, e.Email)
+
 	// Build email message with headers
 	headerString := fmt.Sprintf("From: %s\r\n", from) +
 		fmt.Sprintf("To: %s\r\n", strings.Join(recipients, ",")) +
 		fmt.Sprintf("Subject: %s\r\n", message.MailTitle()) +
 		"MIME-Version: 1.0\r\n" +
 		"Content-Transfer-Encoding: quoted-printable\r\n" +
-		"X-Mailer: BillionMail\r\n" +
+		"X-Mailer: Mozilla/5.0\r\n" +
 		message.MailHeader() +
 		"\r\n" +
 		message.MailText() +
