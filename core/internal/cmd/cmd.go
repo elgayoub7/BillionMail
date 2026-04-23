@@ -199,6 +199,7 @@ var (
 				"/subscribe_success.html":        {},
 				"/unsubscribe_success.html":      {},
 				"/subscribe_form_code.html":      {},
+				"/api/login":                     {},
 			}
 
 			// Bind Server Hooks
