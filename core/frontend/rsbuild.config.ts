@@ -5,7 +5,6 @@ import { pluginBabel } from '@rsbuild/plugin-babel'
 import { pluginVue } from '@rsbuild/plugin-vue'
 import { pluginVueJsx } from '@rsbuild/plugin-vue-jsx'
 import { pluginSass } from '@rsbuild/plugin-sass'
-import { pluginEslint } from '@rsbuild/plugin-eslint'
 import { NaiveUiResolver } from 'unplugin-vue-components/resolvers'
 import { pluginBasicSsl } from '@rsbuild/plugin-basic-ssl'
 import { getEnv, getServer } from './build/utils'
@@ -20,13 +19,6 @@ export default defineConfig({
 		pluginVueJsx(),
 		pluginSass(),
 		...(server.https ? [pluginBasicSsl()] : []),
-		pluginEslint({
-			eslintPluginOptions: {
-				cwd: __dirname,
-				configType: 'flat',
-				extensions: ['.js', '.jsx', '.ts', '.tsx', '.vue'],
-			},
-		}),
 	],
 	tools: {
 		rspack: {
