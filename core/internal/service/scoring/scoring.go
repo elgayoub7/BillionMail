@@ -124,10 +124,31 @@ func (s *ScoringService) GetTopLeads(ctx context.Context, limit int) ([]entity.L
 func (s *ScoringService) GetStats(ctx context.Context) (*entity.ScoringStats, error) {
 	stats := &entity.ScoringStats{}
 
-	g.DB().Model("bm_lead_scores").Ctx(ctx).Where("engagement_level", "cold").Count(&stats.ColdCount)
-	g.DB().Model("bm_lead_scores").Ctx(ctx).Where("engagement_level", "warm").Count(&stats.WarmCount)
-	g.DB().Model("bm_lead_scores").Ctx(ctx).Where("engagement_level", "hot").Count(&stats.HotCount)
-	g.DB().Model("bm_lead_scores").Ctx(ctx).Where("engagement_level", "converted").Count(&stats.ConvertedCount)
+	count, err := g.DB().Model("bm_lead_scores").Ctx(ctx).Where("engagement_level", "cold").Count()
+	if err != nil {
+		g.Log().Errorf(ctx, "ScoringStats cold count error: %v", err)
+	}
+	stats.ColdCount = count
+
+	count, err = g.DB().Model("bm_lead_scores").Ctx(ctx).Where("engagement_level", "warm").Count()
+	if err != nil {
+		g.Log().Errorf(ctx, "ScoringStats warm count error: %v", err)
+	}
+	stats.WarmCount = count
+
+	count, err = g.DB().Model("bm_lead_scores").Ctx(ctx).Where("engagement_level", "hot").Count()
+	if err != nil {
+		g.Log().Errorf(ctx, "ScoringStats hot count error: %v", err)
+	}
+	stats.HotCount = count
+
+	count, err = g.DB().Model("bm_lead_scores").Ctx(ctx).Where("engagement_level", "converted").Count()
+	if err != nil {
+		g.Log().Errorf(ctx, "ScoringStats converted count error: %v", err)
+	}
+	stats.ConvertedCount = count
+
+	g.Log().Infof(ctx, "ScoringStats: cold=%d, warm=%d, hot=%d, converted=%d", stats.ColdCount, stats.WarmCount, stats.HotCount, stats.ConvertedCount)
 	stats.TotalLeads = stats.ColdCount + stats.WarmCount + stats.HotCount + stats.ConvertedCount
 
 	if stats.TotalLeads > 0 {
