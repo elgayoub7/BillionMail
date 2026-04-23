@@ -22,8 +22,8 @@ func (c *ControllerV1) ListDomainHealth(ctx context.Context, req *v1.ListDomainH
 		return
 	}
 
+	res.Data = results
 	res.SetSuccess("")
-	_ = results
 	return
 }
 
@@ -36,8 +36,8 @@ func (c *ControllerV1) CheckDomain(ctx context.Context, req *v1.CheckDomainReq) 
 		return
 	}
 
+	res.Data = result
 	res.SetSuccess("")
-	_ = result
 	return
 }
 
@@ -50,7 +50,7 @@ func (c *ControllerV1) CheckAllDomains(ctx context.Context, req *v1.CheckAllDoma
 		return
 	}
 
+	res.Data = results
 	res.SetSuccess("")
-	_ = results
 	return
 }

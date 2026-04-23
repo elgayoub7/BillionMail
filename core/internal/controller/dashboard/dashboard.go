@@ -22,8 +22,8 @@ func (c *ControllerV1) GetStats(ctx context.Context, req *v1.GetStatsReq) (res *
 		return
 	}
 
+	res.Data = stats
 	res.SetSuccess("")
-	_ = stats
 	return
 }
 
@@ -36,8 +36,8 @@ func (c *ControllerV1) GetActiveSequences(ctx context.Context, req *v1.GetActive
 		return
 	}
 
+	res.Data = sequences
 	res.SetSuccess("")
-	_ = sequences
 	return
 }
 
@@ -55,7 +55,7 @@ func (c *ControllerV1) GetAlerts(ctx context.Context, req *v1.GetAlertsReq) (res
 		return
 	}
 
+	res.Data = alerts
 	res.SetSuccess("")
-	_ = alerts
 	return
 }

@@ -4,14 +4,17 @@ import { is, isDev } from '@/utils'
 // Routes reflect list
 const routesReflectList = [
 	'Overview',
+	'Cold Dashboard',
 	'Email Marketing',
 	'template',
 	'Send API',
 	'Contacts',
 	'Sequences',
-	'Leads',
+	'Lead Scoring',
+	'AB Tests',
 	'Enrichment',
 	'MailDomain',
+	'Domain Health',
 	'MailBoxes',
 	'SMTP',
 	'Logs',

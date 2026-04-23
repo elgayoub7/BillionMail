@@ -22,9 +22,11 @@ func (c *ControllerV1) GetLeads(ctx context.Context, req *v1.GetLeadsReq) (res *
 		return
 	}
 
+	res.Data = map[string]interface{}{
+		"total": total,
+		"list":  leads,
+	}
 	res.SetSuccess("")
-	_ = total
-	_ = leads
 	return
 }
 
@@ -37,8 +39,8 @@ func (c *ControllerV1) GetScoringStats(ctx context.Context, req *v1.GetScoringSt
 		return
 	}
 
+	res.Data = stats
 	res.SetSuccess("")
-	_ = stats
 	return
 }
 
@@ -51,8 +53,8 @@ func (c *ControllerV1) GetLead(ctx context.Context, req *v1.GetLeadReq) (res *v1
 		return
 	}
 
+	res.Data = lead
 	res.SetSuccess("")
-	_ = lead
 	return
 }
 
@@ -65,7 +67,9 @@ func (c *ControllerV1) RecalculateScores(ctx context.Context, req *v1.Recalculat
 		return
 	}
 
+	res.Data = map[string]interface{}{
+		"count": count,
+	}
 	res.SetSuccess("")
-	_ = count
 	return
 }

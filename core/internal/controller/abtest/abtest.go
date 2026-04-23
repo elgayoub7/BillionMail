@@ -54,9 +54,11 @@ func (c *ControllerV1) GetAbTest(ctx context.Context, req *v1.GetAbTestReq) (res
 		return
 	}
 
+	res.Data = map[string]interface{}{
+		"test":     test,
+		"variants": variants,
+	}
 	res.SetSuccess("")
-	_ = test
-	_ = variants
 	return
 }
 
@@ -69,8 +71,8 @@ func (c *ControllerV1) ListAbTests(ctx context.Context, req *v1.ListAbTestsReq) 
 		return
 	}
 
+	res.Data = tests
 	res.SetSuccess("")
-	_ = tests
 	return
 }
 
@@ -83,8 +85,8 @@ func (c *ControllerV1) GetAbTestResults(ctx context.Context, req *v1.GetAbTestRe
 		return
 	}
 
+	res.Data = results
 	res.SetSuccess("")
-	_ = results
 	return
 }
 
