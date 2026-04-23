@@ -146,14 +146,16 @@ func (s *DomainHealthService) CheckAllDomains(ctx context.Context) ([]DomainHeal
 
 // GetDomainHealth returns cached health for a domain
 func (s *DomainHealthService) GetDomainHealth(ctx context.Context, domain string) (map[string]interface{}, error) {
-	var result map[string]interface{}
-	err := g.DB().Model("bm_domain_health").Where("domain = ?", domain).Scan(&result)
+	result, err := g.DB().Model("bm_domain_health").Where("domain = ?", domain).One()
+	
 	return result, err
 }
 
 // GetAllDomainHealth returns cached health for all domains
 func (s *DomainHealthService) GetAllDomainHealth(ctx context.Context) ([]map[string]interface{}, error) {
-	var results []map[string]interface{}
-	err := g.DB().Model("bm_domain_health").Order("domain ASC").Scan(&results)
-	return results, err
+	results, err := g.DB().Model("bm_domain_health").Order("domain ASC").All()
+	if err != nil {
+		return nil, err
+	}
+	return results, nil
 }
