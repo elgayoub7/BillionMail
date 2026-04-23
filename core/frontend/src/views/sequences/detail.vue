@@ -56,10 +56,10 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, h } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { NTag, NPopconfirm } from 'naive-ui'
+import { NTag, NPopconfirm, NButton } from 'naive-ui'
 import { Message } from '@/utils'
 import { getSequenceDetail, getEnrollments, enrollContacts, removeEnrollment } from '@/api/modules/sequences/sequence'
 import { formatTime } from '@/utils'
@@ -116,7 +116,7 @@ const enrollmentColumns = computed(() => [
     width: 120,
     render: (row: Enrollment) => {
       const s = enrollmentStatusMap[row.status]
-      return s ? <NTag size="small" type={s.type}>{t(s.label)}</NTag> : row.status
+      return s ? h(NTag, { size: 'small', type: s.type }, { default: () => t(s.label) }) : row.status
     },
   },
   { key: 'total_emails_sent', title: t('sequences.enrollments.emailsSent'), width: 120 },
@@ -132,14 +132,14 @@ const enrollmentColumns = computed(() => [
     title: t('common.columns.actions'),
     key: 'actions',
     width: 100,
-    render: (row: Enrollment) => (
-      <NPopconfirm onPositiveClick={() => handleRemoveEnrollment(row.id)}>
-        {{
-          trigger: () => <N-button type="error" text size="small">{t('common.actions.delete')}</N-button>,
-          default: () => t('sequences.enrollments.removeConfirm'),
-        }}
-      </NPopconfirm>
-    ),
+    render: (row: Enrollment) => {
+      return h(NPopconfirm, {
+        onPositiveClick: () => handleRemoveEnrollment(row.id),
+      }, {
+        trigger: () => h(NButton, { type: 'error', text: true, size: 'small' }, { default: () => t('common.actions.delete') }),
+        default: () => t('sequences.enrollments.removeConfirm'),
+      })
+    },
   },
 ])
 
