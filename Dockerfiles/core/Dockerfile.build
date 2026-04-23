@@ -18,6 +18,9 @@ RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /build/billionmail .
 # --- Stage 2: Build Frontend ---
 FROM node:20-alpine AS frontend-builder
 
+# Build tools for native node modules (ssh2, cpu-features, etc.)
+RUN apk add --no-cache python3 make g++
+
 RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
 
 WORKDIR /build
