@@ -1,0 +1,6 @@
+{
+  "temp_name": "Test Cold Mail",
+  "content": "<h2>Salut !</h2><p>On teste notre plateforme d'email cold mail. C'est un test, pas de spam ici.</p><p>Si tu vois ce mail, tout fonctionne parfaitement !</p><p>Lien de test: <a href=\"https://selectcircle.fr\">SelectCircle</a></p><p>A+,<br>FastLane Team</p>",
+  "render": "",
+  "add_type": 0
+}

@@ -225,6 +225,16 @@ var (
 							return
 						}
 
+						// Allow email tracking paths (pixel + click redirects)
+						if strings.HasPrefix(r.URL.Path, "/pmta/") {
+							return
+						}
+
+						// Allow public landing pages
+						if strings.HasPrefix(r.URL.Path, "/landing/") {
+							return
+						}
+
 						if r.IsFileRequest() {
 							return
 						}
