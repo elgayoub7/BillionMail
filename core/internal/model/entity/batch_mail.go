@@ -90,7 +90,6 @@ type EmailTask struct {
 	TagIds          []int  `json:"tag_ids"         dc:"Tag IDs (parsed array)"`
 	TagLogic        string `json:"tag_logic"       dc:"Tag Logic (AND/OR/NOT)"`
 	UseTagFilter    int    `json:"use_tag_filter"  dc:"Use Tag Filter (0: no, 1: yes)"`
-}
 
 	// Cold mail scheduling fields
 	SendDelay           int    `json:"send_delay"            dc:"Delay between emails in seconds (0=no delay)" orm:"send_delay"`
