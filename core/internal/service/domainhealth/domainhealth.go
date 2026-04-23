@@ -151,21 +151,27 @@ func (s *DomainHealthService) GetDomainHealth(ctx context.Context, domain string
 	return result, err
 }
 
+// DomainHealthRow represents a row from bm_domain_health
+type DomainHealthRow struct {
+	Id          int    `json:"id"`
+	Domain      string `json:"domain"`
+	SpfStatus   string `json:"spf_status"`
+	DkimStatus  string `json:"dkim_status"`
+	DmarcStatus string `json:"dmarc_status"`
+	MxStatus    string `json:"mx_status"`
+	SpfRecord   string `json:"spf_record"`
+	DkimRecord  string `json:"dkim_record"`
+	DmarcRecord string `json:"dmarc_record"`
+	MxRecords   string `json:"mx_records"`
+	LastChecked int64  `json:"last_checked"`
+}
+
 // GetAllDomainHealth returns cached health for all domains
-func (s *DomainHealthService) GetAllDomainHealth(ctx context.Context) ([]map[string]interface{}, error) {
-	result, err := g.DB().Model("bm_domain_health").
-		Fields("id,domain,spf_status,dkim_status,dmarc_status,mx_status,spf_record,dkim_record,dmarc_record,mx_records,last_checked").
-		Order("domain ASC").All()
+func (s *DomainHealthService) GetAllDomainHealth(ctx context.Context) (interface{}, error) {
+	var rows []DomainHealthRow
+	err := g.DB().Model("bm_domain_health").Order("domain ASC").Scan(\&rows)
 	if err != nil {
 		return nil, err
 	}
-	// Convert gdb.Record to plain maps for JSON serialization
-	results := make([]map[string]interface{}, len(result))
-	for i, record := range result {
-		results[i] = make(map[string]interface{})
-		for k, v := range record {
-			results[i][k] = v
-		}
-	}
-	return results, nil
+	return rows, nil
 }
