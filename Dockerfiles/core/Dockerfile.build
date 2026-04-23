@@ -29,10 +29,13 @@ RUN pnpm install --frozen-lockfile 2>/dev/null || pnpm install
 
 COPY core/frontend/ .
 
+# Create .env so rsbuild loadEnv() picks up SERVER_NAME=docker
+RUN echo "SERVER_NAME=docker" > .env
+
 # Override server config for Docker build (no real server needed at build time)
 RUN mkdir -p build && printf 'interface ServerConfig { https: boolean; address: string; host: string }\nconst serverConfig: Record<string, ServerConfig> = { "docker": { https: true, address: "https://localhost", host: "localhost" } }\nexport default serverConfig\n' > build/config.ts
 
-RUN SERVER_NAME=docker pnpm run build
+RUN pnpm run build
 
 # --- Stage 3: Final Image (based on original Dockerfile) ---
 FROM alpine:3.20
