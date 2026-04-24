@@ -3,6 +3,9 @@
     <n-page-header @back="router.back()" :title="isEdit ? t('sequences.editTitle') : t('sequences.createTitle')" />
     <n-card class="mt-4">
       <n-form ref="formRef" :model="form" label-placement="top">
+        <n-form-item :label="t('sequences.form.sender')" path="addresser">
+          <n-input v-model:value="form.addresser" :placeholder="t('sequences.form.senderPlaceholder')" />
+        </n-form-item>
         <n-grid :cols="2" :x-gap="24">
           <n-form-item-gi :label="t('sequences.form.name')" path="name">
             <n-input v-model:value="form.name" :placeholder="t('sequences.form.namePlaceholder')" />
@@ -10,11 +13,6 @@
           <n-form-item-gi :label="t('sequences.form.group')" path="group_id">
             <group-select v-model:value="form.group_id" />
           </n-form-item-gi>
-          <n-gi :span="1">
-            <n-form-item :label="t('sequences.form.sender')" path="addresser">
-              <n-input v-model:value="form.addresser" :placeholder="t('sequences.form.senderPlaceholder')" />
-            </n-form-item>
-          </n-gi>
           <n-form-item-gi :label="t('sequences.form.senderName')">
             <n-input v-model:value="form.full_name" :placeholder="t('sequences.form.senderNamePlaceholder')" />
           </n-form-item-gi>
