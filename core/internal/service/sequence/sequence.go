@@ -253,12 +253,15 @@ func GetSequenceDetail(ctx context.Context, id int) (*v1.SequenceDetail, error) 
 	}
 
 	var steps []stepRow
-	g.DB().Model("bm_sequence_steps st").
+	err = g.DB().Model("bm_sequence_steps st").
 		LeftJoin("email_templates et", "et.id = st.template_id").
-		Fields(`st.*, et.name as template_name`).
+		Fields(`st.*, et.temp_name as template_name`).
 		Where("st.sequence_id", id).
 		Order("st.step_order ASC").
 		Scan(&steps)
+	if err != nil {
+		g.Log().Warningf(ctx, "Failed to query steps for sequence %d: %v", id, err)
+	}
 
 	stepItems := make([]v1.SequenceStepItem, 0, len(steps))
 	for _, s := range steps {
