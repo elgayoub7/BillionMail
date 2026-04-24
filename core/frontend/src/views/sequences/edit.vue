@@ -10,9 +10,11 @@
           <n-form-item-gi :label="t('sequences.form.group')" path="group_id">
             <group-select v-model:value="form.group_id" />
           </n-form-item-gi>
-          <n-form-item-gi :label="t('sequences.form.sender')" path="addresser">
-            <n-input v-model:value="form.addresser" :placeholder="t('sequences.form.senderPlaceholder')" />
-          </n-form-item-gi>
+          <n-gi :span="1">
+            <n-form-item :label="t('sequences.form.sender')" path="addresser">
+              <n-input v-model:value="form.addresser" :placeholder="t('sequences.form.senderPlaceholder')" />
+            </n-form-item>
+          </n-gi>
           <n-form-item-gi :label="t('sequences.form.senderName')">
             <n-input v-model:value="form.full_name" :placeholder="t('sequences.form.senderNamePlaceholder')" />
           </n-form-item-gi>
@@ -218,12 +220,4 @@ onMounted(async () => {
         template_id: s.template_id,
         wait_days: s.wait_days || 0,
         wait_hours: s.wait_hours || 0,
-        condition_type: s.condition_type || '',
-        condition_step_id: s.condition_step_id || 0,
-        on_true_go_to: s.on_true_go_to || 0,
-        on_false_go_to: s.on_false_go_to || 0,
-      })),
-    })
-  }
-})
-</script>
+  
