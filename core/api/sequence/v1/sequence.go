@@ -29,7 +29,7 @@ type CreateSequenceReq struct {
 	Description   string      `json:"description"   dc:"Description"`
 	Addresser     string      `json:"addresser"     v:"required" dc:"Sender email"`
 	FullName      string      `json:"full_name"     dc:"Sender display name"`
-	GroupId       int         `json:"group_id"      v:"required|min:1" dc:"Contact group ID"`
+	GroupId       int         `json:"group_id"      dc:"Contact group ID (0=all groups)"`
 	TagIds        []int       `json:"tag_ids"       dc:"Tag IDs"`
 	TagLogic      string      `json:"tag_logic"     v:"in:AND,OR,NOT" dc:"Tag filter logic"`
 	TrackOpen     int         `json:"track_open"    dc:"Track opens (0/1)"`

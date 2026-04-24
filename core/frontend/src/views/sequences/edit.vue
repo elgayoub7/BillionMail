@@ -195,7 +195,7 @@ async function handleSaveAndActivate() {
       id = Number(route.params.id)
     } else {
       const res = await createSequence(form as any)
-      id = res.data.id
+      id = res.id
     }
     await activateSequence({ id })
     Message.success(t('sequences.form.activated'))
@@ -209,7 +209,7 @@ async function handleSaveAndActivate() {
 onMounted(async () => {
   if (isEdit.value) {
     const res = await getSequenceDetail({ id: Number(route.params.id) })
-    const detail = res.data
+    const detail = res
     Object.assign(form, {
       name: detail.name,
       description: detail.description,

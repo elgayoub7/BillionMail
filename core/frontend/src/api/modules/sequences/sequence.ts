@@ -14,6 +14,7 @@ export function getSequenceDetail(params: { id: number }) {
 export function createSequence(data: Record<string, unknown>) {
   return instance.post('/sequence/create', data, {
     fetchOptions: {
+      prefix: '/api',
       loading: t('sequences.loading.creating'),
       successMessage: true,
     },
@@ -23,6 +24,7 @@ export function createSequence(data: Record<string, unknown>) {
 export function updateSequence(data: Record<string, unknown>) {
   return instance.post('/sequence/update', data, {
     fetchOptions: {
+      prefix: '/api',
       loading: t('sequences.loading.updating'),
       successMessage: true,
     },
@@ -32,6 +34,7 @@ export function updateSequence(data: Record<string, unknown>) {
 export function deleteSequence(data: { id: number }) {
   return instance.post('/sequence/delete', data, {
     fetchOptions: {
+      prefix: '/api',
       loading: t('sequences.loading.deleting'),
       successMessage: true,
     },
@@ -40,25 +43,25 @@ export function deleteSequence(data: { id: number }) {
 
 export function activateSequence(data: { id: number }) {
   return instance.post('/sequence/activate', data, {
-    fetchOptions: { successMessage: true },
+    fetchOptions: { prefix: '/api', successMessage: true },
   })
 }
 
 export function pauseSequence(data: { id: number }) {
   return instance.post('/sequence/pause', data, {
-    fetchOptions: { successMessage: true },
+    fetchOptions: { prefix: '/api', successMessage: true },
   })
 }
 
 export function resumeSequence(data: { id: number }) {
   return instance.post('/sequence/resume', data, {
-    fetchOptions: { successMessage: true },
+    fetchOptions: { prefix: '/api', successMessage: true },
   })
 }
 
 export function enrollContacts(data: { sequence_id: number; contact_ids?: number[] }) {
   return instance.post('/sequence/enroll', data, {
-    fetchOptions: { successMessage: true },
+    fetchOptions: { prefix: '/api', successMessage: true },
   })
 }
 
@@ -68,12 +71,12 @@ export function getEnrollments(params: { sequence_id: number; page: number; page
 
 export function removeEnrollment(data: { enrollment_id: number }) {
   return instance.post('/sequence/remove_enrollment', data, {
-    fetchOptions: { successMessage: true },
+    fetchOptions: { prefix: '/api', successMessage: true },
   })
 }
 
 export function sendTestStep(data: { sequence_id: number; step_id: number; test_email: string }) {
   return instance.post('/sequence/send_test', data, {
-    fetchOptions: { successMessage: true },
+    fetchOptions: { prefix: '/api', successMessage: true },
   })
 }

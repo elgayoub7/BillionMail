@@ -153,8 +153,8 @@ async function fetchEnrollments() {
       page_size: enrollmentPageSize.value,
       status: enrollmentStatus.value,
     })
-    enrollments.value = res.data.list
-    enrollmentPagination.value.itemCount = res.data.total
+    enrollments.value = res.list
+    enrollmentPagination.value.itemCount = res.total
   } finally {
     enrollmentsLoading.value = false
   }
@@ -175,7 +175,7 @@ async function handleRemoveEnrollment(id: number) {
 
 async function loadDetail() {
   const res = await getSequenceDetail({ id: Number(route.params.id) })
-  detail.value = res.data
+  detail.value = res
 }
 
 onMounted(async () => {

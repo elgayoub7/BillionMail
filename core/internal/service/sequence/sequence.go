@@ -456,9 +456,10 @@ func EnrollContacts(ctx context.Context, sequenceId int, contactIds []int) (enro
 	model := g.DB().Model("bm_contacts").Where("active", 1).Where("status", 1)
 	if len(contactIds) > 0 {
 		model = model.WhereIn("id", contactIds)
-	} else {
+	} else if seq.GroupId > 0 {
 		model = model.Where("group_id", seq.GroupId)
 	}
+	// group_id=0 means all groups - no filter applied
 	err = model.Fields("id, email").Scan(&contacts)
 	if err != nil {
 		return 0, 0, err
