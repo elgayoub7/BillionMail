@@ -220,4 +220,12 @@ onMounted(async () => {
         template_id: s.template_id,
         wait_days: s.wait_days || 0,
         wait_hours: s.wait_hours || 0,
-  
+        condition_type: s.condition_type || '',
+        condition_step_id: s.condition_step_id || 0,
+        on_true_go_to: s.on_true_go_to || 0,
+        on_false_go_to: s.on_false_go_to || 0,
+      })),
+    })
+  }
+})
+</script>
