@@ -3,9 +3,10 @@
     <n-page-header @back="router.back()" :title="isEdit ? t('sequences.editTitle') : t('sequences.createTitle')" />
     <n-card class="mt-4">
       <n-form ref="formRef" :model="form" label-placement="top">
-        <n-form-item :label="t('sequences.form.sender')" path="addresser">
-          <n-input v-model:value="form.addresser" :placeholder="t('sequences.form.senderPlaceholder')" />
-        </n-form-item>
+        <div class="test-addresser" style="padding:10px;border:2px solid red">
+          <label>Sender Email (debug)</label>
+          <input type="text" v-model="form.addresser" placeholder="sender@example.com" />
+        </div>
         <n-grid :cols="2" :x-gap="24">
           <n-form-item-gi :label="t('sequences.form.name')" path="name">
             <n-input v-model:value="form.name" :placeholder="t('sequences.form.namePlaceholder')" />
@@ -84,6 +85,7 @@ import { useI18n } from 'vue-i18n'
 import { Message } from '@/utils'
 import { getSequenceDetail, createSequence, updateSequence, activateSequence } from '@/api/modules/sequences/sequence'
 import GroupSelect from '@/views/contacts/subscribers/components/GroupSelect.vue'
+import { NFormItem, NInput } from 'naive-ui'
 import type { StepInput } from './interface'
 
 const { t } = useI18n()
