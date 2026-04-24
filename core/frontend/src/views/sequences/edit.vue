@@ -3,9 +3,17 @@
     <n-page-header @back="router.back()" :title="isEdit ? t('sequences.editTitle') : t('sequences.createTitle')" />
     <n-card class="mt-4">
       <n-form ref="formRef" :model="form" label-placement="top">
-        <div class="test-addresser" style="padding:10px;border:2px solid red">
-          <label>Sender Email (debug)</label>
-          <input type="text" v-model="form.addresser" placeholder="sender@example.com" />
+        <div style="margin-bottom: 16px;">
+          <div style="font-size: 14px; margin-bottom: 4px; padding: 0 12px 0 0; line-height: 2; color: var(--n-text-color);">Sender Email</div>
+          <div style="position: relative; cursor: text;">
+            <input type="text" v-model="form.addresser" placeholder="sender@example.com"
+              style="width: 100%; height: 34px; padding: 0 12px; font-size: 14px;
+              border: 1px solid var(--n-border-color); border-radius: 3px;
+              background: var(--n-color); color: var(--n-text-color);
+              outline: none; box-sizing: border-box;"
+              onfocus="this.style.borderColor='var(--n-primary-color)'"
+              onblur="this.style.borderColor='var(--n-border-color)'" />
+          </div>
         </div>
         <n-grid :cols="2" :x-gap="24">
           <n-form-item-gi :label="t('sequences.form.name')" path="name">
