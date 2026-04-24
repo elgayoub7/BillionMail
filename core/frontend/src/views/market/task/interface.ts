@@ -32,6 +32,12 @@ export interface Task {
 	tag_ids: number[]
 	tag_logic: string
 	tags: Array<{ id: number; name: string }>
+	send_delay: number
+	schedule_start_hour: number
+	schedule_end_hour: number
+	schedule_days: string
+	sender_pool: string
+	daily_limit_per_sender: number
 }
 
 export interface Group {

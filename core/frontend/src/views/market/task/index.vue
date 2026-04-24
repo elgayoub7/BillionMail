@@ -38,7 +38,7 @@
 </template>
 
 <script lang="tsx" setup>
-import { DataTableColumns, NButton, NFlex, NProgress, NTag } from 'naive-ui'
+import { DataTableColumns, NButton, NFlex, NProgress, NTag, NTooltip } from 'naive-ui'
 import { useModal } from '@/hooks/modal/useModal'
 import { useTableData } from '@/hooks/useTableData'
 import { confirm, formatDurationHighest, formatTime } from '@/utils'
@@ -192,6 +192,47 @@ const columns = ref<DataTableColumns<Task>>([
 					/>
 				</div>
 			)
+		},
+	},
+	{
+		key: 'cold_mail',
+		title: 'Planning',
+		width: '10%',
+		minWidth: 120,
+		render: row => {
+			const tags: any[] = []
+			if (row.schedule_start_hour > 0 || row.schedule_end_hour < 24) {
+				tags.push(
+					<NTag size="small" type="info" bordered={false}>
+						{`${row.schedule_start_hour}h-${row.schedule_end_hour}h`}
+					</NTag>,
+				)
+			}
+			if (row.send_delay > 0) {
+				tags.push(
+					<NTag size="small" type="warning" bordered={false}>
+						{`Délai ${row.send_delay}s`}
+					</NTag>,
+				)
+			}
+			try {
+				const pool = JSON.parse(row.sender_pool || '[]')
+				if (Array.isArray(pool) && pool.length > 0) {
+					tags.push(
+						<NTooltip>
+							{{
+								trigger: () => (
+									<NTag size="small" type="success" bordered={false}>
+										{`${pool.length} expéditeurs`}
+									</NTag>
+								),
+								default: () => pool.map((s: any) => `${s.email}`).join(', '),
+							}}
+						</NTooltip>,
+					)
+				}
+			} catch {}
+			return tags.length > 0 ? <NFlex size="small" wrap>{tags}</NFlex> : '--'
 		},
 	},
 	{

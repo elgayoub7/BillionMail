@@ -99,6 +99,43 @@
 								</div>
 							</n-form-item>
 						</n-card>
+						<n-card title="Cold Mail" class="mb-24px">
+							<n-collapse :default-expanded-names="coldMailExpanded ? ['cold'] : []"
+								@update:expanded-names="coldMailExpanded = $event.includes('cold')">
+								<n-collapse-item title="Paramètres avancés — délai, horaires, rotation expéditeurs" name="cold">
+									<n-grid :cols="24" :x-gap="16">
+										<n-form-item-gi :span="8" label="Délai entre emails (sec)">
+											<n-input-number v-model:value="form.send_delay" :min="0" :max="600" :step="1"
+												placeholder="0 = aucun délai" class="w-full" />
+										</n-form-item-gi>
+										<n-form-item-gi :span="8" label="Heure début">
+											<n-input-number v-model:value="form.schedule_start_hour" :min="0" :max="23"
+												placeholder="0 = pas de restriction" class="w-full" />
+										</n-form-item-gi>
+										<n-form-item-gi :span="8" label="Heure fin">
+											<n-input-number v-model:value="form.schedule_end_hour" :min="1" :max="24"
+												placeholder="24 = pas de restriction" class="w-full" />
+										</n-form-item-gi>
+									</n-grid>
+									<n-form-item label="Jours autorisés">
+										<n-checkbox-group v-model:value="form.schedule_days_array">
+											<n-space>
+												<n-checkbox v-for="d in weekDays" :key="d.value" :value="d.value"
+													:label="d.label" />
+											</n-space>
+										</n-checkbox-group>
+									</n-form-item>
+									<n-form-item label="Pool d'expéditeurs (JSON)">
+										<n-input v-model:value="form.sender_pool" type="textarea" :rows="3"
+											placeholder='[{"email":"sender1@domain.com","name":"John"}]' />
+									</n-form-item>
+									<n-form-item label="Limite / expéditeur / jour">
+										<n-input-number v-model:value="form.daily_limit_per_sender" :min="0" :max="10000"
+											:step="10" placeholder="0 = illimité" class="w-full" />
+									</n-form-item>
+								</n-collapse-item>
+							</n-collapse>
+						</n-card>
 						<n-card>
 							<n-form-item :label="t('market.task.edit.sendTime')" path="start_time">
 								<n-radio-group v-model:value="sendTimeType" class="flex items-center" @update:value="handleUpdateSend">
@@ -212,7 +249,26 @@ const form = reactive({
 	tag_logic: 'OR',
 	track_click: 1,
 	track_open: 1,
+	// cold mail fields
+	send_delay: 0,
+	schedule_start_hour: 0,
+	schedule_end_hour: 24,
+	schedule_days_array: [1, 2, 3, 4, 5, 6, 7] as number[],
+	sender_pool: '[]',
+	daily_limit_per_sender: 0,
 })
+
+const coldMailExpanded = ref(false)
+
+const weekDays = [
+	{ value: 1, label: 'Lun' },
+	{ value: 2, label: 'Mar' },
+	{ value: 3, label: 'Mer' },
+	{ value: 4, label: 'Jeu' },
+	{ value: 5, label: 'Ven' },
+	{ value: 6, label: 'Sam' },
+	{ value: 7, label: 'Dim' },
+]
 
 const logicOptions = [
 	{
@@ -389,6 +445,13 @@ const getParams = () => {
 		remark: form.remark,
 		tag_ids: form.tag_ids,
 		tag_logic: form.tag_logic,
+		// cold mail
+		send_delay: form.send_delay,
+		schedule_start_hour: form.schedule_start_hour,
+		schedule_end_hour: form.schedule_end_hour,
+		schedule_days: JSON.stringify(form.schedule_days_array),
+		sender_pool: form.sender_pool,
+		daily_limit_per_sender: form.daily_limit_per_sender,
 	}
 }
 
@@ -449,6 +512,21 @@ const initForm = async () => {
 		nextTick(() => {
 			form.tag_ids = res.tag_ids
 		})
+		// cold mail fields
+		form.send_delay = res.send_delay ?? 0
+		form.schedule_start_hour = res.schedule_start_hour ?? 0
+		form.schedule_end_hour = res.schedule_end_hour ?? 24
+		form.sender_pool = res.sender_pool ?? '[]'
+		form.daily_limit_per_sender = res.daily_limit_per_sender ?? 0
+		try {
+			const days = JSON.parse(res.schedule_days || '[1,2,3,4,5,6,7]')
+			form.schedule_days_array = Array.isArray(days) ? days : [1, 2, 3, 4, 5, 6, 7]
+		} catch {
+			form.schedule_days_array = [1, 2, 3, 4, 5, 6, 7]
+		}
+		if (form.send_delay > 0 || form.schedule_start_hour > 0 || form.schedule_end_hour < 24 || form.sender_pool !== '[]') {
+			coldMailExpanded.value = true
+		}
 	}
 }
 
