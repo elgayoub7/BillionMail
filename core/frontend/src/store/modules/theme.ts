@@ -4,7 +4,7 @@ import { GlobalThemeOverrides } from 'naive-ui'
 export default defineStore(
 	'ThemeStore',
 	() => {
-		const theme = ref<'light' | 'dark'>('light')
+		const theme = ref<'light' | 'dark'>('dark')
 
 		const getCssVar = (name: string) => {
 			return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
@@ -18,14 +18,14 @@ export default defineStore(
 					fontSizeSmall: '12px',
 					fontSizeMedium: '12px',
 					fontSizeLarge: '14px',
-					borderRadius: '4px',
+					borderRadius: '8px',
 					baseColor: '#fff',
 					textColor1: getCssVar('--color-text-1'),
 					textColor2: getCssVar('--color-text-2'),
 					primaryColor: getCssVar('--color-primary-1'),
 					primaryColorHover: getCssVar('--color-primary-hover-1'),
-					successColor: getCssVar('--color-primary-1'),
-					successColorHover: getCssVar('--color-primary-hover-1'),
+					successColor: '#00d68f',
+					successColorHover: '#00b377',
 					warningColor: getCssVar('--color-warning-1'),
 					errorColor: getCssVar('--color-error-1'),
 				},
@@ -33,8 +33,8 @@ export default defineStore(
 					color: getCssVar('--color-bg-2'),
 					textColor: getCssVar('--color-text-1'),
 					headerColor: getCssVar('--color-bg-1'),
-					siderColor: getCssVar('--color-bg-1'),
-					siderTextColor: getCssVar('--color-sider-text-1'),
+					siderColor: '#0f1117',
+					siderTextColor: getCssVar('--color-text-2'),
 				},
 				Menu: {
 					fontSize: '14px',
@@ -51,7 +51,7 @@ export default defineStore(
 				Card: {
 					color: getCssVar('--color-bg-1'),
 					borderColor: 'transparent',
-					borderRadius: '6px',
+					borderRadius: '10px',
 				},
 				Form: {
 					feedbackHeightMedium: '20px',
@@ -75,7 +75,7 @@ export default defineStore(
 					buttonBorderColorActive: 'transparent',
 					buttonBoxShadowHover: 'none',
 					buttonBoxShadowFocus: 'none',
-					buttonBorderRadius: '4px',
+					buttonBorderRadius: '6px',
 					labelPadding: '0 0 0 8px',
 				},
 				Dialog: {
@@ -88,7 +88,7 @@ export default defineStore(
 					thColor: getCssVar('--color-table-th-1'),
 					tdColor: getCssVar('--color-table-td-1'),
 					tdColorHover: getCssVar('--color-table-th-1'),
-					borderRadius: '4px',
+					borderRadius: '8px',
 				},
 				Breadcrumb: {
 					fontSize: '14px',
@@ -97,7 +97,7 @@ export default defineStore(
 					railColorActive: getCssVar('--color-primary-1'),
 				},
 				Tabs: {
-					tabBorderRadius: '4px',
+					tabBorderRadius: '6px',
 				},
 				Progress: {
 					textColorLineInner: '#fff',
@@ -105,6 +105,13 @@ export default defineStore(
 				Button: {
 					color: getCssVar('--color-bg-1'),
 					colorHover: getCssVar('--color-bg-1'),
+				},
+				Input: {
+					color: getCssVar('--color-bg-1'),
+					colorFocus: getCssVar('--color-bg-1'),
+					borderColor: getCssVar('--color-border-1'),
+					borderColorHover: getCssVar('--color-primary-1'),
+					borderColorFocus: getCssVar('--color-primary-1'),
 				},
 			}
 		}
@@ -118,6 +125,12 @@ export default defineStore(
 		const changeTheme = () => {
 			const isDarkMode = theme.value === 'dark'
 			document.documentElement.setAttribute('theme-mode', isDarkMode ? 'dark' : '')
+			// Tailwind dark mode class
+			if (isDarkMode) {
+				document.documentElement.classList.add('dark')
+			} else {
+				document.documentElement.classList.remove('dark')
+			}
 			nextTick(() => {
 				themeOverrides.value = getThemeOverrides()
 			})

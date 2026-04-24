@@ -91,7 +91,7 @@ export const routes: RouteRecordRaw[] = [
 	},
 	{
 		path: '/',
-		redirect: '/overview',
+		redirect: '/cold-dashboard',
 	},
 	...menuList,
 	...otherArray,
