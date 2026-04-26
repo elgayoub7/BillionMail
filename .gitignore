@@ -49,3 +49,5 @@ core/frontend/coverage/
 __pycache__/
 conf/postfix/conf/sasl_passwd*
 conf/postfix/conf/*.db
+core/frontend-dist/
+frontend-dist/

@@ -1,7 +1,7 @@
 user = billionmail
-password = billionmail
+password = dcmTBnFSNebfSBWvkyOkWpMttfbcGsRZ
 hosts = pgsql
 dbname = billionmail
 
-query = SELECT goto FROM alias WHERE address='%s' AND active=1 LIMIT 1
+query = (select username from mailbox where username like '%s' and active = 1 limit 1) union (select goto from alias where address like '%s' and active = 1 limit 1)
 
