@@ -113,6 +113,16 @@ func Start(ctx context.Context) (err error) {
 		sequence.UpdateEnrollmentsFromCompletedTasks(ctx)
 	})
 
+	// Sequence: scan sender mailboxes for replies via IMAP
+	gtimer.Add(1*time.Minute, func() {
+		sequence.ScanReplyInboxes(ctx)
+	})
+
+	// Sequence: scan sender mailboxes for replies via IMAP
+	gtimer.Add(1*time.Minute, func() {
+		sequence.ScanReplyInboxes(ctx)
+	})
+
 	// AB test: check running tests for auto-winner
 	gtimer.Add(5*time.Minute, func() {
 		abtest.AbTest().ProcessRunningTests(ctx)
