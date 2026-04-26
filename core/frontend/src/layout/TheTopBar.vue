@@ -45,7 +45,6 @@ const sectionMap = {
 	campaigns: [
 		{ label: 'Sequences', path: '/sequences' },
 		{ label: 'Email Marketing', path: '/market' },
-		{ label: 'AB Tests', path: '/abtest' },
 	],
 	templates: [
 		{ label: 'Templates', path: '/template' },
@@ -68,7 +67,7 @@ const sectionMap = {
 function getActiveKey() {
 	const p = route.path
 	if (p === '/' || p.startsWith('/cold-dashboard') || p.startsWith('/overview')) return 'dashboard'
-	if (p.startsWith('/sequences') || p.startsWith('/market') || p.startsWith('/abtest')) return 'campaigns'
+	if (p.startsWith('/sequences') || p.startsWith('/market')) return 'campaigns'
 	if (p.startsWith('/template')) return 'templates'
 	if (p.startsWith('/contacts') || p.startsWith('/scoring')) return 'contacts'
 	return 'settings'

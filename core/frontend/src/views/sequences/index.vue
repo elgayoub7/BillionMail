@@ -143,7 +143,11 @@ const columns = computed<DataTableColumns<Sequence>>(() => [
 
 const rowProps = (row: Sequence) => ({
   style: 'cursor: pointer',
-  onClick: () => router.push(`/sequences/${row.id}`),
+  onClick: (e: MouseEvent) => {
+    const t = e.target as HTMLElement
+    if (t.closest('button') || t.closest('.n-popconfirm')) return
+    router.push(`/sequences/${row.id}`)
+  },
 })
 
 function handleCreate() {

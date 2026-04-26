@@ -51,6 +51,45 @@
           </template>
         </bt-table-layout>
       </n-tab-pane>
+      <n-tab-pane :name="'lead-scoring'" :tab="'Lead Scoring'">
+        <n-space vertical size="large">
+          <n-grid :cols="4" :x-gap="16">
+            <n-gi>
+              <n-card size="small">
+                <n-statistic label="Hot Leads" :value="hotCount">
+                  <template #suffix>
+                    <n-tag type="error" size="small" style="margin-left: 8px">&gt; 40</n-tag>
+                  </template>
+                </n-statistic>
+              </n-card>
+            </n-gi>
+            <n-gi>
+              <n-card size="small">
+                <n-statistic label="Warm Leads" :value="warmCount">
+                  <template #suffix>
+                    <n-tag type="warning" size="small" style="margin-left: 8px">10-40</n-tag>
+                  </template>
+                </n-statistic>
+              </n-card>
+            </n-gi>
+            <n-gi>
+              <n-card size="small">
+                <n-statistic label="Cold Leads" :value="coldCount">
+                  <template #suffix>
+                    <n-tag type="info" size="small" style="margin-left: 8px">&lt; 10</n-tag>
+                  </template>
+                </n-statistic>
+              </n-card>
+            </n-gi>
+            <n-gi>
+              <n-card size="small">
+                <n-statistic label="Avg Score" :value="avgScore" :precision="1" />
+              </n-card>
+            </n-gi>
+          </n-grid>
+          <n-data-table :columns="scoringColumns" :data="scoredEnrollments" :pagination="{ pageSize: 10 }" :default-sort="{ columnKey: 'score', order: 'descend' }" />
+        </n-space>
+      </n-tab-pane>
     </n-tabs>
   </div>
 </template>
@@ -59,7 +98,7 @@
 import { ref, onMounted, computed, h } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { NTag, NPopconfirm, NButton } from 'naive-ui'
+import { NTag, NPopconfirm, NButton, NProgress } from 'naive-ui'
 import { Message } from '@/utils'
 import { getSequenceDetail, getEnrollments, enrollContacts, removeEnrollment } from '@/api/modules/sequences/sequence'
 import { formatTime } from '@/utils'
@@ -100,6 +139,97 @@ function stepTypeColor(type: string): 'info' | 'success' | 'warning' {
   return 'success'
 }
 
+// --- Lead Scoring ---
+interface ScoredEnrollment extends Enrollment {
+  score: number
+  tier: 'hot' | 'warm' | 'cold'
+}
+
+function calculateLeadScore(e: Enrollment): number {
+  return e.total_opens * 5 + e.total_clicks * 10 + e.total_replies * 30
+}
+
+function getScoreTier(score: number): 'hot' | 'warm' | 'cold' {
+  if (score >= 40) return 'hot'
+  if (score >= 10) return 'warm'
+  return 'cold'
+}
+
+const scoredEnrollments = computed<ScoredEnrollment[]>(() =>
+  enrollments.value
+    .map((e) => {
+      const score = calculateLeadScore(e)
+      return { ...e, score, tier: getScoreTier(score) }
+    })
+    .sort((a, b) => b.score - a.score)
+)
+
+const hotCount = computed(() => scoredEnrollments.value.filter((e) => e.tier === 'hot').length)
+const warmCount = computed(() => scoredEnrollments.value.filter((e) => e.tier === 'warm').length)
+const coldCount = computed(() => scoredEnrollments.value.filter((e) => e.tier === 'cold').length)
+const avgScore = computed(() => {
+  if (scoredEnrollments.value.length === 0) return 0
+  return scoredEnrollments.value.reduce((sum, e) => sum + e.score, 0) / scoredEnrollments.value.length
+})
+
+const tierConfig: Record<string, { label: string; type: 'error' | 'warning' | 'info' }> = {
+  hot: { label: 'Hot', type: 'error' },
+  warm: { label: 'Warm', type: 'warning' },
+  cold: { label: 'Cold', type: 'info' },
+}
+
+const scoringColumns = computed(() => [
+  {
+    key: 'email',
+    title: 'Email',
+    minWidth: 220,
+    ellipsis: { tooltip: true },
+  },
+  {
+    key: 'score',
+    title: 'Score',
+    width: 90,
+    sorter: 'default' as const,
+    defaultSortOrder: 'descend' as const,
+    render: (row: ScoredEnrollment) => {
+      const maxScore = 100
+      const pct = Math.min((row.score / maxScore) * 100, 100)
+      const status = row.score >= 40 ? 'error' : row.score >= 10 ? 'warning' : 'success'
+      return h(NProgress, {
+        type: 'line',
+        percentage: pct,
+        status,
+        indicatorPlacement: 'inside',
+        showIndicator: true,
+        style: { width: '80px' },
+      })
+    },
+  },
+  {
+    key: 'tier',
+    title: 'Tier',
+    width: 100,
+    render: (row: ScoredEnrollment) => {
+      const cfg = tierConfig[row.tier]
+      return h(NTag, { size: 'small', type: cfg.type }, { default: () => cfg.label })
+    },
+  },
+  { key: 'total_opens', title: 'Opens', width: 80 },
+  { key: 'total_clicks', title: 'Clicks', width: 80 },
+  { key: 'total_replies', title: 'Replies', width: 80 },
+  { key: 'total_emails_sent', title: 'Emails', width: 80 },
+  {
+    key: 'status',
+    title: 'Status',
+    width: 100,
+    render: (row: ScoredEnrollment) => {
+      const s = enrollmentStatusMap[row.status]
+      return s ? h(NTag, { size: 'small', type: s.type }, { default: () => t(s.label) }) : row.status
+    },
+  },
+])
+
+// --- Enrollments ---
 const enrollmentStatusMap: Record<number, { label: string; type: 'default' | 'success' | 'warning' | 'error' }> = {
   0: { label: 'sequences.enrollStatus.active', type: 'success' },
   1: { label: 'sequences.enrollStatus.completed', type: 'default' },

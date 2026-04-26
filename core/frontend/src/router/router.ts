@@ -32,7 +32,6 @@ import apiRoute from './modules/api'
 import contactsRoute from './modules/contacts'
 import sequencesRoute from './modules/sequences'
 import scoringRoute from './modules/scoring'
-import abtestRoute from './modules/abtest'
 import mailDomainRoute from './modules/domain'
 import domainHealthRoute from './modules/domain-health'
 import mailboxRoute from './modules/mailbox'
@@ -51,7 +50,6 @@ const moduleRoutes: RouteRecordRaw[] = [
 	contactsRoute,
 	sequencesRoute,
 	scoringRoute,
-	abtestRoute,
 	mailDomainRoute,
 	domainHealthRoute,
 	mailboxRoute,

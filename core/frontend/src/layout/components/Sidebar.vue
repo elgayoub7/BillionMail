@@ -119,7 +119,6 @@ const iconMap: Record<string, VNodeChild> = {
 	'video-outreach': <i class="i-mdi-video-outline"></i>,
 	'cold-dashboard': <i class="i-mdi-monitor-dashboard"></i>,
 	'scoring': <i class="i-mdi-star-circle-outline"></i>,
-	'abtest': <i class="i-mdi-ab-testing"></i>,
 	'domain-health': <i class="i-mdi-shield-check-outline"></i>,
 	logout: <i class="i-mdi-logout"></i>,
 }

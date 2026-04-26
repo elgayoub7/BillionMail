@@ -6,9 +6,14 @@ export interface Template {
 	drag_data: string
 	create_time: number
 	update_time: number
-	chat_id:string
-	isEdit?:boolean
-	edit_name?:string
+	chat_id: string
+	ab_enabled: boolean
+	ab_split_ratio: number
+	ab_winner_criteria: string
+	variant_b_subject: string
+	variant_b_html: string
+	isEdit?: boolean
+	edit_name?: string
 }
 
 export interface TemplateParams {
