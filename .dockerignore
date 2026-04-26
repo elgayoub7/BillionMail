@@ -16,4 +16,9 @@ tests/
 CLAUDE.md
 docker-compose*.yml
 deploy.sh
-Dockerfiles/
+Dockerfiles/core/build-context/
+postgresql-data
+frontend-dist
+*.bak
+conf/postfix/conf/
+conf/rspamd/local.d/worker-controller.inc

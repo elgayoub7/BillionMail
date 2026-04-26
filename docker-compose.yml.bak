@@ -173,7 +173,7 @@ services:
             - webmail
 
     core-billionmail:
-      image: billionmail/core:4.9.13
+      image: billionmail/core:4.9.1
       hostname: core-manage
       depends_on:
         - pgsql-billionmail
@@ -192,8 +192,6 @@ services:
         - ./logs:/opt/billionmail/logs
         - ./logs/core:/opt/billionmail/core/logs
         - ./core-data:/opt/billionmail/core/data
-        - ./frontend-dist:/opt/billionmail/core/public/dist
-        - ./core/manifest/config:/opt/billionmail/core/manifest/config
         # SECURITY FIX: Docker socket removed - core service should not have host Docker access.
         # If Docker management is needed, use a dedicated sidecar with restricted capabilities.
         # - /var/run/docker.sock:/var/run/docker.sock:ro
