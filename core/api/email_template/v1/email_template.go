@@ -15,6 +15,11 @@ type EmailTemplate struct {
 	CreateTime int    `json:"create_time" description:"Create Time"     orm:"create_time"`
 	UpdateTime int    `json:"update_time" description:"Update Time"     orm:"update_time"`
 	Chat_id    string `json:"chat_id"     description:"Exclusive AI Email"   orm:"chat_id"`
+	AbEnabled        bool   `json:"ab_enabled"           description:"A/B Test Enabled"         orm:"ab_enabled"`
+	VariantBSubject  string `json:"variant_b_subject"    description:"Variant B Subject"        orm:"variant_b_subject"`
+	VariantBHtml     string `json:"variant_b_html"       description:"Variant B HTML Body"      orm:"variant_b_html"`
+	AbSplitRatio     int    `json:"ab_split_ratio"       description:"A/B Split Ratio (1-99)"   orm:"ab_split_ratio"`
+	AbWinnerCriteria string `json:"ab_winner_criteria"   description:"A/B Winner Criteria"      orm:"ab_winner_criteria"`
 }
 
 // CreateTemplateReq Create template request
@@ -26,6 +31,11 @@ type CreateTemplateReq struct {
 	Content       string `json:"html_content" dc:"HTML Content(Required when add_type=0,1)"`
 	Render        string `json:"drag_data" dc:"Drag and Drop Render Data(Required when add_type=1)"`
 	Chat_id       string `json:"chat_id" dc:"Exclusive AI Email"`
+	AbEnabled        bool   `json:"ab_enabled"          dc:"A/B Test Enabled"`
+	VariantBSubject  string `json:"variant_b_subject"   dc:"Variant B Subject"`
+	VariantBHtml     string `json:"variant_b_html"      dc:"Variant B HTML Body"`
+	AbSplitRatio     int    `json:"ab_split_ratio"      dc:"A/B Split Ratio (1-99)"`
+	AbWinnerCriteria string `json:"ab_winner_criteria"  dc:"A/B Winner Criteria"`
 }
 
 type CreateTemplateRes struct {
@@ -54,6 +64,11 @@ type UpdateTemplateReq struct {
 	TempName      string `json:"temp_name" dc:"Template Name"`
 	Content       string `json:"html_content" dc:"HTML Content"`
 	Render        string `json:"drag_data" dc:"Render Data"`
+	AbEnabled        *bool   `json:"ab_enabled"          dc:"A/B Test Enabled"`
+	VariantBSubject  string `json:"variant_b_subject"   dc:"Variant B Subject"`
+	VariantBHtml     string `json:"variant_b_html"      dc:"Variant B HTML Body"`
+	AbSplitRatio     int    `json:"ab_split_ratio"      dc:"A/B Split Ratio (1-99)"`
+	AbWinnerCriteria string `json:"ab_winner_criteria"  dc:"A/B Winner Criteria"`
 }
 
 type UpdateTemplateRes struct {
@@ -84,6 +99,11 @@ type CopyTemplateReq struct {
 	Authorization string `json:"authorization" dc:"Authorization" in:"header"`
 	Id            int    `json:"id" v:"required" dc:"Template ID"`
 	Chat_id       string `json:"chat_id" dc:"Exclusive AI Email"`
+	AbEnabled        bool   `json:"ab_enabled"          dc:"A/B Test Enabled"`
+	VariantBSubject  string `json:"variant_b_subject"   dc:"Variant B Subject"`
+	VariantBHtml     string `json:"variant_b_html"      dc:"Variant B HTML Body"`
+	AbSplitRatio     int    `json:"ab_split_ratio"      dc:"A/B Split Ratio (1-99)"`
+	AbWinnerCriteria string `json:"ab_winner_criteria"  dc:"A/B Winner Criteria"`
 }
 
 type CopyTemplateRes struct {

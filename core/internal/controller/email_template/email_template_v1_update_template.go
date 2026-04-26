@@ -28,7 +28,7 @@ func (c *ControllerV1) UpdateTemplate(ctx context.Context, req *v1.UpdateTemplat
 	}
 
 	// Update template
-	err = email_template.UpdateTemplate(ctx, req.Id, req.TempName, req.Content, req.Render)
+	err = email_template.UpdateTemplate(ctx, req.Id, req.TempName, req.Content, req.Render, req.AbEnabled, req.VariantBSubject, req.VariantBHtml, req.AbWinnerCriteria, req.AbSplitRatio)
 	if err != nil {
 		res.Code = 500
 		res.SetError(gerror.New(public.LangCtx(ctx, "Failed to update template")))

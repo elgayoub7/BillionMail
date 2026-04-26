@@ -20,17 +20,23 @@ func (c *ControllerV1) CreateSequence(ctx context.Context, req *v1.CreateSequenc
 	res = &v1.CreateSequenceRes{}
 
 	id, err := sequence.CreateSequence(ctx, sequence.CreateSequenceArgs{
-		Name:        req.Name,
-		Description: req.Description,
-		Addresser:   req.Addresser,
-		FullName:    req.FullName,
-		GroupId:     req.GroupId,
-		TagIds:      req.TagIds,
-		TagLogic:    req.TagLogic,
-		TrackOpen:   req.TrackOpen,
-		TrackClick:  req.TrackClick,
-		Unsubscribe: req.Unsubscribe,
-		Steps:       req.Steps,
+		Name:          req.Name,
+		Description:   req.Description,
+		Addresser:     req.Addresser,
+		FullName:      req.FullName,
+		GroupId:       req.GroupId,
+		TagIds:        req.TagIds,
+		TagLogic:      req.TagLogic,
+		TrackOpen:     req.TrackOpen,
+		TrackClick:    req.TrackClick,
+		Unsubscribe:   req.Unsubscribe,
+		SenderPool:    req.SenderPool,
+		DailyLimit:    req.DailyLimit,
+		SendDelay:     req.SendDelay,
+		ScheduleStart: req.ScheduleStart,
+		ScheduleEnd:   req.ScheduleEnd,
+		ScheduleDays:  req.ScheduleDays,
+		Steps:         req.Steps,
 	})
 	if err != nil {
 		res.SetError(err)
@@ -58,18 +64,24 @@ func (c *ControllerV1) UpdateSequence(ctx context.Context, req *v1.UpdateSequenc
 	}
 
 	err = sequence.UpdateSequence(ctx, sequence.UpdateSequenceArgs{
-		Id:          req.Id,
-		Name:        req.Name,
-		Description: req.Description,
-		Addresser:   req.Addresser,
-		FullName:    req.FullName,
-		GroupId:     req.GroupId,
-		TagIds:      req.TagIds,
-		TagLogic:    req.TagLogic,
-		TrackOpen:   req.TrackOpen,
-		TrackClick:  req.TrackClick,
-		Unsubscribe: req.Unsubscribe,
-		Steps:       req.Steps,
+		Id:            req.Id,
+		Name:          req.Name,
+		Description:   req.Description,
+		Addresser:     req.Addresser,
+		FullName:      req.FullName,
+		GroupId:       req.GroupId,
+		TagIds:        req.TagIds,
+		TagLogic:      req.TagLogic,
+		TrackOpen:     req.TrackOpen,
+		TrackClick:    req.TrackClick,
+		Unsubscribe:   req.Unsubscribe,
+		SenderPool:    req.SenderPool,
+		DailyLimit:    req.DailyLimit,
+		SendDelay:     req.SendDelay,
+		ScheduleStart: req.ScheduleStart,
+		ScheduleEnd:   req.ScheduleEnd,
+		ScheduleDays:  req.ScheduleDays,
+		Steps:         req.Steps,
 	})
 	if err != nil {
 		res.SetError(err)

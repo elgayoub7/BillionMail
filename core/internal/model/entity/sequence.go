@@ -14,6 +14,12 @@ type Sequence struct {
 	TrackOpen         int    `json:"track_open"        dc:"Track Opens"`
 	TrackClick        int    `json:"track_click"       dc:"Track Clicks"`
 	Unsubscribe       int    `json:"unsubscribe"       dc:"Allow Unsubscribe"`
+	SenderPool        string `json:"sender_pool"       dc:"Sender Pool (JSON)"`
+	DailyLimitPerSender int  `json:"daily_limit_per_sender" dc:"Daily Limit Per Sender"`
+	SendDelay         int    `json:"send_delay"         dc:"Delay between emails (seconds)"`
+	ScheduleStartHour int    `json:"schedule_start_hour" dc:"Schedule Start Hour (0-23)"`
+	ScheduleEndHour   int    `json:"schedule_end_hour"   dc:"Schedule End Hour (1-24)"`
+	ScheduleDays      string `json:"schedule_days"      dc:"Schedule Days (JSON ISO weekday)"`
 	TotalEnrolled     int    `json:"total_enrolled"    dc:"Total Enrolled"`
 	TotalCompleted    int    `json:"total_completed"   dc:"Total Completed"`
 	TotalUnsubscribed int    `json:"total_unsubscribed" dc:"Total Unsubscribed"`

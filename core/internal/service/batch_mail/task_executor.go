@@ -105,12 +105,13 @@ func ProcessEmailTasks(ctx context.Context) {
 		g.Log().Error(ctx, "Failed to get pending email tasks: %v", err)
 		return
 	}
+	g.Log().Info(ctx, "ProcessEmailTasks: found %d pending tasks", len(tasks))
 
 	if len(tasks) == 0 {
 		return
 	}
 
-	//g.Log().Debug(ctx, "Found %d pending email tasks", len(tasks))
+	g.Log().Info(ctx, "ProcessEmailTasks: scanning for pending tasks")
 
 	// process each task
 	for _, task := range tasks {
@@ -146,6 +147,7 @@ type TaskExecutor struct {
 	lastActivity time.Time
 
 	// task configuration cache
+	taskId       int
 	taskConfig   *entity.EmailTask
 	configLoaded time.Time
 
@@ -303,6 +305,7 @@ func (e *TaskExecutor) ProcessTask(ctx context.Context) error {
 	g.Log().Info(ctx, "task %d: create worker pool, size: %d", task.Id, poolSize)
 
 	// increase worker pool options, improve efficiency
+	e.taskId = task.Id
 	e.pool, err = ants.NewPool(poolSize,
 		ants.WithPreAlloc(true),
 		ants.WithPanicHandler(func(p interface{}) {
@@ -553,6 +556,7 @@ func (e *TaskExecutor) loadTaskConfig(taskId int) error {
 	}
 
 	e.taskConfig = task
+	e.taskId = task.Id
 	e.configLoaded = time.Now()
 
 	g.Log().Infof(context.Background(), "Task %d: config loaded into cache", taskId)
@@ -697,6 +701,14 @@ func (e *TaskExecutor) processTaskRecipients(ctx context.Context, task *entity.E
 
 // getNextRecipientBatch
 func (e *TaskExecutor) getNextRecipientBatch(ctx context.Context, taskId, lastId, batchSize int) ([]*entity.RecipientInfo, error) {
+	// Recover stuck records (is_sent=2 with sent_time=0 from crashed executor)
+	g.DB().Model("recipient_info").
+		Where("task_id", taskId).
+		Where("is_sent", 2).
+		Where("sent_time", 0).
+		Data(g.Map{"is_sent": 0}).
+		Update()
+
 	var recipients []*entity.RecipientInfo
 
 	err := g.DB().Model("recipient_info").
@@ -768,7 +780,7 @@ func (e *TaskExecutor) processRecipientBatch(ctx context.Context, task *entity.E
 	updates := make(map[int]int)
 
 	// submit send task for each recipient
-	for _, recipient := range recipients {
+	for recipientIdx, recipient := range recipients {
 		// check again if paused or canceled
 		if e.isPaused.Load() {
 			select {
@@ -820,6 +832,7 @@ func (e *TaskExecutor) processRecipientBatch(ctx context.Context, task *entity.E
 
 		// create recipient copy to avoid closure problem
 		recipientBak := recipient
+		recipientIdxBak := recipientIdx
 
 		// add wait count
 		e.wg.Add(1)
@@ -836,7 +849,7 @@ func (e *TaskExecutor) processRecipientBatch(ctx context.Context, task *entity.E
 			//personalized := emailContent
 
 			// send email
-			result := e.sendEmail(ctx, task, recipientBak, personalized)
+			result := e.sendEmail(ctx, task, recipientBak, personalized, recipientIdxBak)
 
 			// use sendEmailMock (Don't use in production)
 			// result := e.sendEmailMock(ctx, task, recipientBak, personalized)
@@ -997,6 +1010,35 @@ func (e *TaskExecutor) processSendResults(ctx context.Context, resultChan <-chan
 					}
 
 					g.Log().Debug(ctx, "successfully batch updated %d recipient status", len(successResults))
+
+					// update sends_count and delivered_count on email_tasks
+					if e.taskId > 0 {
+						_, err2 := g.DB().Exec(ctx,
+							"UPDATE email_tasks SET sends_count = sends_count + ?, delivered_count = COALESCE(delivered_count, 0) + ? WHERE id = ?",
+							len(successResults), len(successResults), e.taskId)
+						if err2 != nil {
+							g.Log().Error(ctx, "failed to update sends_count for task", e.taskId, err2)
+						} else {
+							g.Log().Info(ctx, "updated sends_count for task", e.taskId, "+", len(successResults))
+						}
+
+						// store message_id in bm_sequence_email_tasks for reply tracking
+						for _, mid := range messageIds {
+							mid = strings.Trim(mid, "<>")
+							if mid == "" {
+								continue
+							}
+							_, err3 := g.DB().Exec(ctx,
+								"UPDATE bm_sequence_email_tasks SET message_id = ? WHERE email_task_id = ? AND (message_id = '' OR message_id IS NULL)",
+								mid, e.taskId)
+							if err3 != nil {
+								g.Log().Debug(ctx, "failed to store message_id in bm_sequence_email_tasks:", err3)
+							} else {
+								g.Log().Debug(ctx, "stored message_id in bm_sequence_email_tasks for task", e.taskId)
+								break
+							}
+						}
+					}
 				}
 			}
 
@@ -1206,7 +1248,7 @@ func (e *TaskExecutor) restoreErrorVariables(content string) string {
 }
 
 // sendEmail send email
-func (e *TaskExecutor) sendEmail(ctx context.Context, task *entity.EmailTask, recipient *entity.RecipientInfo, content string) *SendResult {
+func (e *TaskExecutor) sendEmail(ctx context.Context, task *entity.EmailTask, recipient *entity.RecipientInfo, content string, recipientIndex int) *SendResult {
 	// check if context is canceled
 	select {
 	case <-ctx.Done():
@@ -1228,7 +1270,7 @@ func (e *TaskExecutor) sendEmail(ctx context.Context, task *entity.EmailTask, re
 	activeSender := currentTask.Addresser
 	activeName := currentTask.FullName
 	if e.senderRotation != nil {
-		poolSender, err := e.senderRotation.GetNextSender(ctx)
+		poolSender, err := e.senderRotation.GetSenderForRecipient(ctx, recipientIndex)
 		if err != nil {
 			g.Log().Warningf(ctx, "Sender rotation failed: %v", err)
 		} else if poolSender != nil {
@@ -1303,7 +1345,7 @@ func (e *TaskExecutor) sendEmail(ctx context.Context, task *entity.EmailTask, re
 }
 
 // sendEmailMock simulates sending an email and records it in the database.
-func (e *TaskExecutor) sendEmailMock(ctx context.Context, task *entity.EmailTask, recipient *entity.RecipientInfo, content string) *SendResult {
+func (e *TaskExecutor) sendEmailMock(ctx context.Context, task *entity.EmailTask, recipient *entity.RecipientInfo, content string, recipientIndex int) *SendResult {
 	// Check if the context is canceled
 	select {
 	case <-ctx.Done():
@@ -1471,9 +1513,9 @@ func (e *TaskExecutor) isTaskComplete(ctx context.Context, taskId int) (bool, er
 		return false, err
 	}
 
-	// if there are no recipients, task is not complete
+	// if there are no recipients, task is complete (nothing to send)
 	if result.TotalCount == 0 {
-		return false, nil
+		return true, nil
 	}
 
 	// if sent count equals or exceeds total count, task is complete

@@ -231,13 +231,23 @@ func createBatchStepEmails(ctx context.Context) {
 		TrackOpen  int    `json:"track_open"`
 		TrackClick int    `json:"track_click"`
 		Unsub      int    `json:"unsubscribe"`
+	SenderPool    string `json:"sender_pool"`
+	DailyLimit    int    `json:"daily_limit_per_sender"`
+	SendDelay     int    `json:"send_delay"`
+	ScheduleStart int    `json:"schedule_start_hour"`
+	ScheduleEnd   int    `json:"schedule_end_hour"`
+	ScheduleDays  string `json:"schedule_days"`
 	}
 
 	var groups []pendingGroup
-	err := g.DB().Model("bm_sequence_enrollments e").LeftJoin("bm_sequences s", "s.id = e.sequence_id").LeftJoin("bm_sequence_steps st", "st.sequence_id = s.id AND st.step_order = e.current_step").
-		LeftJoin("bm_sequence_email_tasks set", "set.enrollment_id = e.id AND set.step_id = st.id AND set.status = 0").
+	err := g.DB().Model("bm_sequence_enrollments e").
+		LeftJoin("bm_sequences s", "s.id = e.sequence_id").
+		LeftJoin("bm_sequence_steps st", "st.sequence_id = s.id AND st.step_order = e.current_step").
+		LeftJoin("bm_sequence_email_tasks set", "set.enrollment_id = e.id AND set.step_id = st.id").
 		Fields(`DISTINCT s.id as sequence_id, st.id as step_id, st.step_order, st.subject, st.template_id,
-			s.addresser, s.full_name, s.track_open, s.track_click, s.unsubscribe as unsub`).
+			s.addresser, s.full_name, s.track_open, s.track_click, s.unsubscribe as unsub,
+			s.sender_pool, s.daily_limit_per_sender, s.send_delay,
+			s.schedule_start_hour, s.schedule_end_hour, s.schedule_days`).
 		Where("e.status", 0).
 		Where("s.status", 1).
 		Where("st.step_type", "email").
@@ -260,12 +270,19 @@ func createBatchStepEmails(ctx context.Context) {
 			"subject":      grp.Subject,
 			"full_name":    grp.FullName,
 			"template_id":  grp.TemplateId,
+			"recipient_count": 0,
 			"task_process": 0,
 			"pause":        0,
 			"threads":      5,
 			"track_open":   grp.TrackOpen,
 			"track_click":  grp.TrackClick,
 			"unsubscribe":  grp.Unsub,
+			"sender_pool":  grp.SenderPool,
+			"daily_limit_per_sender": grp.DailyLimit,
+			"send_delay":   grp.SendDelay,
+			"schedule_start_hour": grp.ScheduleStart,
+			"schedule_end_hour":   grp.ScheduleEnd,
+			"schedule_days":       grp.ScheduleDays,
 			"start_time":   now,
 			"create_time":  now,
 			"update_time":  now,
@@ -370,6 +387,26 @@ func UpdateEnrollmentsFromCompletedTasks(ctx context.Context) {
 			g.DB().Model("bm_sequence_enrollments").Where("id", enrId).Data(g.Map{
 				"total_emails_sent": gdb.Raw("total_emails_sent + 1"),
 			}).Update()
+
+			// Advance enrollment to next step
+			var enrInfo struct {
+				SequenceId  int `json:"sequence_id"`
+				CurrentStep int `json:"current_step"`
+			}
+			if g.DB().Model("bm_sequence_enrollments").Where("id", enrId).Fields("sequence_id, current_step").Scan(&enrInfo) == nil && enrInfo.SequenceId > 0 {
+				steps, stepsErr := GetSequenceSteps(ctx, enrInfo.SequenceId)
+				if stepsErr == nil {
+					nextOrder := findNextStepOrder(steps, enrInfo.CurrentStep)
+					if nextOrder == 0 {
+						markEnrollmentCompleted(ctx, enrId, now)
+					} else {
+						g.DB().Model("bm_sequence_enrollments").Where("id", enrId).Data(g.Map{
+							"current_step":            nextOrder,
+							"current_step_entered_at": now,
+						}).Update()
+					}
+				}
+			}
 		}
 
 		g.DB().Exec(ctx, fmt.Sprintf(`

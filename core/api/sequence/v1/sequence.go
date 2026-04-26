@@ -35,6 +35,12 @@ type CreateSequenceReq struct {
 	TrackOpen     int         `json:"track_open"    dc:"Track opens (0/1)"`
 	TrackClick    int         `json:"track_click"   dc:"Track clicks (0/1)"`
 	Unsubscribe   int         `json:"unsubscribe"   dc:"Allow unsubscribe (0/1)"`
+	SenderPool    string      `json:"sender_pool"    dc:"Sender pool JSON"`
+	DailyLimit    int         `json:"daily_limit_per_sender" dc:"Daily limit per sender"`
+	SendDelay     int         `json:"send_delay"     dc:"Delay between emails (seconds)"`
+	ScheduleStart int         `json:"schedule_start_hour" dc:"Schedule start hour"`
+	ScheduleEnd   int         `json:"schedule_end_hour"   dc:"Schedule end hour"`
+	ScheduleDays  string      `json:"schedule_days"  dc:"Schedule days JSON"`
 	Steps         []StepInput `json:"steps"         v:"required" dc:"Sequence steps"`
 }
 
@@ -59,6 +65,12 @@ type UpdateSequenceReq struct {
 	TrackOpen     int         `json:"track_open"    dc:"Track opens (0/1)"`
 	TrackClick    int         `json:"track_click"   dc:"Track clicks (0/1)"`
 	Unsubscribe   int         `json:"unsubscribe"   dc:"Allow unsubscribe (0/1)"`
+	SenderPool    string      `json:"sender_pool"    dc:"Sender pool JSON"`
+	DailyLimit    int         `json:"daily_limit_per_sender" dc:"Daily limit per sender"`
+	SendDelay     int         `json:"send_delay"     dc:"Delay between emails (seconds)"`
+	ScheduleStart int         `json:"schedule_start_hour" dc:"Schedule start hour"`
+	ScheduleEnd   int         `json:"schedule_end_hour"   dc:"Schedule end hour"`
+	ScheduleDays  string      `json:"schedule_days"  dc:"Schedule days JSON"`
 	Steps         []StepInput `json:"steps"         dc:"Sequence steps"`
 }
 
@@ -105,6 +117,10 @@ type SequenceListItem struct {
 	GroupName      string `json:"group_name"`
 	CreateTime     int    `json:"create_time"`
 	UpdateTime     int    `json:"update_time"`
+	SendDelay      int    `json:"send_delay"`
+	ScheduleStartHour int  `json:"schedule_start_hour"`
+	ScheduleEndHour   int  `json:"schedule_end_hour"`
+	ScheduleDays      string `json:"schedule_days"`
 }
 
 type FindSequenceReq struct {
@@ -131,6 +147,12 @@ type SequenceDetail struct {
 	TrackOpen         int              `json:"track_open"`
 	TrackClick        int              `json:"track_click"`
 	Unsubscribe       int              `json:"unsubscribe"`
+	SenderPool        string           `json:"sender_pool"`
+	DailyLimitPerSender int            `json:"daily_limit_per_sender"`
+	SendDelay         int              `json:"send_delay"`
+	ScheduleStartHour int              `json:"schedule_start_hour"`
+	ScheduleEndHour   int              `json:"schedule_end_hour"`
+	ScheduleDays      string           `json:"schedule_days"`
 	TotalEnrolled     int              `json:"total_enrolled"`
 	TotalCompleted    int              `json:"total_completed"`
 	TotalUnsubscribed int              `json:"total_unsubscribed"`
@@ -238,6 +260,7 @@ type EnrollmentListItem struct {
 	TotalEmailsSent int    `json:"total_emails_sent"`
 	TotalOpens      int    `json:"total_opens"`
 	TotalClicks     int    `json:"total_clicks"`
+	TotalReplies    int    `json:"total_replies"`
 }
 
 type RemoveEnrollmentReq struct {

@@ -24,6 +24,12 @@ type CreateSequenceArgs struct {
 	TrackOpen   int           `json:"track_open"`
 	TrackClick  int           `json:"track_click"`
 	Unsubscribe int           `json:"unsubscribe"`
+	SenderPool  string        `json:"sender_pool"`
+	DailyLimit  int           `json:"daily_limit_per_sender"`
+	SendDelay   int           `json:"send_delay"`
+	ScheduleStart int         `json:"schedule_start_hour"`
+	ScheduleEnd  int           `json:"schedule_end_hour"`
+	ScheduleDays string        `json:"schedule_days"`
 	Steps       []v1.StepInput `json:"steps"`
 }
 
@@ -39,6 +45,12 @@ type UpdateSequenceArgs struct {
 	TrackOpen   int           `json:"track_open"`
 	TrackClick  int           `json:"track_click"`
 	Unsubscribe int           `json:"unsubscribe"`
+	SenderPool  string        `json:"sender_pool"`
+	DailyLimit  int           `json:"daily_limit_per_sender"`
+	SendDelay   int           `json:"send_delay"`
+	ScheduleStart int         `json:"schedule_start_hour"`
+	ScheduleEnd  int           `json:"schedule_end_hour"`
+	ScheduleDays string        `json:"schedule_days"`
 	Steps       []v1.StepInput `json:"steps"`
 }
 
@@ -51,6 +63,17 @@ func CreateSequence(ctx context.Context, args CreateSequenceArgs) (int, error) {
 		tagIdsJson, _ := json.Marshal(args.TagIds)
 
 		// Default values
+		// Auto-fill full_name from sender_pool if empty
+		if args.FullName == "" && args.SenderPool != "" {
+			type senderEntry struct {
+				Name  string `json:"name"`
+				Email string `json:"email"`
+			}
+			var senders []senderEntry
+			if json.Unmarshal([]byte(args.SenderPool), &senders) == nil && len(senders) > 0 {
+				args.FullName = senders[0].Name
+			}
+		}
 		trackOpen := args.TrackOpen
 		if trackOpen == 0 {
 			trackOpen = 1
@@ -80,6 +103,12 @@ func CreateSequence(ctx context.Context, args CreateSequenceArgs) (int, error) {
 			"track_open":   trackOpen,
 			"track_click":  trackClick,
 			"unsubscribe":  unsubscribe,
+			"sender_pool":  args.SenderPool,
+			"daily_limit_per_sender": args.DailyLimit,
+			"send_delay":   args.SendDelay,
+			"schedule_start_hour": args.ScheduleStart,
+			"schedule_end_hour":   args.ScheduleEnd,
+			"schedule_days":       args.ScheduleDays,
 			"create_time":  now,
 			"update_time":  now,
 		})
@@ -337,6 +366,12 @@ func UpdateSequence(ctx context.Context, args UpdateSequenceArgs) error {
 			data["tag_logic"] = args.TagLogic
 		}
 		data["tag_ids"] = string(tagIdsJson)
+		data["sender_pool"] = args.SenderPool
+		data["daily_limit_per_sender"] = args.DailyLimit
+		data["send_delay"] = args.SendDelay
+		data["schedule_start_hour"] = args.ScheduleStart
+		data["schedule_end_hour"] = args.ScheduleEnd
+		data["schedule_days"] = args.ScheduleDays
 
 		_, err := tx.Ctx(ctx).Model("bm_sequences").Where("id", args.Id).Data(data).Update()
 		if err != nil {
@@ -376,7 +411,33 @@ func UpdateSequence(ctx context.Context, args UpdateSequenceArgs) error {
 
 // DeleteSequence deletes a sequence and all related data
 func DeleteSequence(ctx context.Context, id int) error {
-	// Cascade will handle steps, enrollments, email_tasks
+	// Get email_task_ids from sequence_email_tasks before deleting
+	var taskIds []int
+	g.DB().Model("bm_sequence_email_tasks").
+		Where("sequence_id", id).
+		Fields("DISTINCT email_task_id").
+		Scan(&taskIds)
+
+	// Delete recipient_info for these tasks
+	if len(taskIds) > 0 {
+		g.DB().Model("recipient_info").WhereIn("task_id", taskIds).Delete()
+	}
+
+	// Delete sequence_email_tasks
+	g.DB().Model("bm_sequence_email_tasks").Where("sequence_id", id).Delete()
+
+	// Delete sequence_enrollments
+	g.DB().Model("bm_sequence_enrollments").Where("sequence_id", id).Delete()
+
+	// Delete email_tasks created by this sequence
+	if len(taskIds) > 0 {
+		g.DB().Model("email_tasks").WhereIn("id", taskIds).Delete()
+	}
+
+	// Delete sequence_steps
+	g.DB().Model("bm_sequence_steps").Where("sequence_id", id).Delete()
+
+	// Delete the sequence itself
 	_, err := g.DB().Model("bm_sequences").Where("id", id).Delete()
 	return err
 }
@@ -535,7 +596,7 @@ func GetEnrollments(ctx context.Context, sequenceId int, page, pageSize int, sta
 
 	var rows []v1.EnrollmentListItem
 	err = model.Page(page, pageSize).
-		Fields("id, sequence_id, contact_id, email, current_step, status, enrolled_at, last_email_sent_at, total_emails_sent, total_opens, total_clicks").
+		Fields("id, sequence_id, contact_id, email, current_step, status, enrolled_at, last_email_sent_at, total_emails_sent, total_opens, total_clicks, total_replies").
 		Order("enrolled_at DESC").
 		Scan(&rows)
 
@@ -613,6 +674,7 @@ func SendTestStep(ctx context.Context, sequenceId, stepId int, testEmail string)
 		"subject":      step.Subject,
 		"full_name":    seq.FullName,
 		"template_id":  step.TemplateId,
+		"recipient_count": 0,
 		"task_process": 0,
 		"pause":        0,
 		"threads":      1,

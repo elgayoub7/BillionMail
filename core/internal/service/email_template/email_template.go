@@ -17,18 +17,23 @@ func CheckTemplateNameExists(ctx context.Context, name string) (bool, error) {
 }
 
 // CreateTemplate
-func CreateTemplate(ctx context.Context, name string, addType int, content, render, chat_id string) (int, error) {
+func CreateTemplate(ctx context.Context, name string, addType int, content, render, chat_id string, abEnabled bool, variantBSubject, variantBHtml, abWinnerCriteria string, abSplitRatio int) (int, error) {
 	now := time.Now().Unix()
 	result, err := g.DB().Model("email_templates").
 		Ctx(ctx).
 		Insert(g.Map{
-			"temp_name":   name,
-			"add_type":    addType,
-			"content":     content,
-			"render":      render,
-			"create_time": now,
-			"update_time": now,
-			"chat_id":     chat_id,
+			"temp_name":          name,
+			"add_type":           addType,
+			"content":            content,
+			"render":             render,
+			"create_time":        now,
+			"update_time":        now,
+			"chat_id":            chat_id,
+			"ab_enabled":         abEnabled,
+			"variant_b_subject":  variantBSubject,
+			"variant_b_html":     variantBHtml,
+			"ab_split_ratio":     abSplitRatio,
+			"ab_winner_criteria": abWinnerCriteria,
 		})
 	if err != nil {
 		return 0, err
@@ -57,7 +62,7 @@ func GetTemplate(ctx context.Context, id int) (*v1.EmailTemplate, error) {
 }
 
 // UpdateTemplate
-func UpdateTemplate(ctx context.Context, id int, name, content, render string) error {
+func UpdateTemplate(ctx context.Context, id int, name, content, render string, abEnabled *bool, variantBSubject, variantBHtml, abWinnerCriteria string, abSplitRatio int) error {
 	data := g.Map{
 		"update_time": time.Now().Unix(),
 	}
@@ -69,6 +74,21 @@ func UpdateTemplate(ctx context.Context, id int, name, content, render string) e
 	}
 	if render != "" {
 		data["render"] = render
+	}
+	if abEnabled != nil {
+		data["ab_enabled"] = *abEnabled
+	}
+	if variantBSubject != "" {
+		data["variant_b_subject"] = variantBSubject
+	}
+	if variantBHtml != "" {
+		data["variant_b_html"] = variantBHtml
+	}
+	if abWinnerCriteria != "" {
+		data["ab_winner_criteria"] = abWinnerCriteria
+	}
+	if abSplitRatio > 0 {
+		data["ab_split_ratio"] = abSplitRatio
 	}
 
 	_, err := g.DB().Model("email_templates").
