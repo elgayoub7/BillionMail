@@ -32,4 +32,5 @@ type IContactV1 interface {
 	EditContactsNDP(ctx context.Context, req *v1.EditContactsNDPReq) (res *v1.EditContactsNDPRes, err error)
 	DeleteContactsNDP(ctx context.Context, req *v1.DeleteContactsNDPReq) (res *v1.DeleteContactsNDPRes, err error)
 	BatchTagContacts(ctx context.Context, req *v1.BatchTagContactsReq) (res *v1.BatchTagContactsRes, err error)
+	PreviewImport(ctx context.Context, req *v1.PreviewImportReq) (res *v1.PreviewImportRes, err error)
 }

@@ -2,10 +2,10 @@
 package contact
 
 import (
-	"billionmail-core/api/contact/v1"
+	v1 "billionmail-core/api/contact/v1"
 	"billionmail-core/internal/consts"
 	"billionmail-core/internal/model/entity"
-	"billionmail-core/internal/service/contact"
+	contact_service "billionmail-core/internal/service/contact"
 	"billionmail-core/internal/service/public"
 	"bytes"
 	"context"
@@ -257,7 +257,17 @@ func (c *ControllerV1) ImportContacts(ctx context.Context, req *v1.ImportContact
 		}
 
 		g.Log().Debug(ctx, "Processing file import")
-		contactList = parseEmailContent(ctx, req.FileData, req.ImportType)
+		if len(req.ColumnMapping) > 0 {
+			mappedContacts, err := parseCSVWithMapping(ctx, req.FileData, req.ColumnMapping)
+			if err != nil {
+				res.Code = 400
+				res.SetError(gerror.New(public.LangCtx(ctx, "Failed to parse CSV with mapping: {}", err.Error())))
+				return res, nil
+			}
+			contactList = mappedContacts
+		} else {
+			contactList = parseEmailContent(ctx, req.FileData, req.ImportType)
+		}
 
 	case ImportTypePaste:
 		if req.Contacts == "" {
@@ -346,7 +356,7 @@ func (c *ControllerV1) validateImportRequest(ctx context.Context, req *v1.Import
 
 	// Check if the group exists
 	for _, groupId := range req.GroupIds {
-		_, err := contact.GetGroup(ctx, groupId)
+		_, err := contact_service.GetGroup(ctx, groupId)
 		if err != nil {
 			return gerror.New(public.LangCtx(ctx, "Group {} does not exist", groupId))
 		}
@@ -355,10 +365,70 @@ func (c *ControllerV1) validateImportRequest(ctx context.Context, req *v1.Import
 	return nil
 }
 
+
+
+// parseCSVWithMapping parses CSV content using column mapping from preview
+func parseCSVWithMapping(ctx context.Context, content string, columnMapping map[string]string) ([]*entity.Contact, error) {
+	result := contact_service.ParseCSV(content, 0) // parse all rows
+	if len(result.Headers) == 0 {
+		return nil, fmt.Errorf("failed to parse CSV headers")
+	}
+
+	// Check that email is mapped
+	emailCol := ""
+	for csvCol, targetField := range columnMapping {
+		if targetField == "email" {
+			emailCol = csvCol
+			break
+		}
+	}
+	if emailCol == "" {
+		return nil, fmt.Errorf("email column not mapped")
+	}
+
+	var contacts []*entity.Contact
+	for _, row := range result.Rows {
+		email := strings.TrimSpace(row[emailCol])
+		if email == "" {
+			continue
+		}
+
+		if err := gvalid.New().Rules("email").Data(email).Run(ctx); err != nil {
+			g.Log().Debugf(ctx, "Invalid email format in CSV, skipping: %s", email)
+			continue
+		}
+
+		c := &entity.Contact{
+			Email:   email,
+			Active:  1,
+			Attribs: make(map[string]string),
+		}
+
+		// Map remaining columns to attributes
+		for csvCol, targetField := range columnMapping {
+			val, ok := row[csvCol]
+			if !ok || val == "" || targetField == "email" || targetField == "skip" || targetField == "" {
+				continue
+			}
+			if targetField == "active" {
+				if val == "0" {
+					c.Active = 0
+				}
+				continue
+			}
+			c.Attribs[targetField] = strings.TrimSpace(val)
+		}
+
+		contacts = append(contacts, c)
+	}
+
+	return contacts, nil
+}
+
 // importContactsToGroup Import contacts to the specified group
 func (c *ControllerV1) importContactsToGroup(ctx context.Context, contacts []*entity.Contact, overwrite int) (int, error) {
 	if overwrite == 1 {
-		return contact.BatchCreateContactsWithOverwrite(ctx, contacts)
+		return contact_service.BatchCreateContactsWithOverwrite(ctx, contacts)
 	}
-	return contact.BatchCreateContactsIgnoreDuplicate(ctx, contacts)
+	return contact_service.BatchCreateContactsIgnoreDuplicate(ctx, contacts)
 }

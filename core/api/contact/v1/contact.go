@@ -100,6 +100,7 @@ type ImportContactsReq struct {
 	DefaultActive int    `json:"default_active" v:"in:0,1" dc:"Default subscription status (1: Subscribed 0: Unsubscribed) Default:1"`
 	Status        int    `json:"status" v:"in:0,1" dc:"Data confirmation (1:Confirmed   0:Unconfirmed) Default:0"`
 	Overwrite     int    `json:"overwrite" v:"in:0,1" dc:"Overwrite attribs, subscription status of existing  (1:overwrite   0:unoverwrite) Default:0"`
+	ColumnMapping map[string]string `json:"column_mapping" dc:"Column mapping from CSV header to field name"`
 }
 
 // ImportContactsRes Import contacts response

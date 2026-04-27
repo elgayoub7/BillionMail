@@ -109,3 +109,17 @@ export const batchSetTag = (data: { ids: number[]; tag_ids: number[]; action: nu
 		},
 	})
 }
+
+export const previewImport = (data: {
+	import_type: number
+	file_data: string
+	file_type?: string
+}) => {
+	return instance.post('/contact/group/preview_import', data, {
+		fetchOptions: {
+			loading: t('contacts.subscribers.loading.previewImport'),
+			successMessage: false,
+		},
+	})
+}
+
