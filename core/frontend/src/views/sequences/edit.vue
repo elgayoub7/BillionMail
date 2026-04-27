@@ -80,7 +80,36 @@
                 @update:value="(val: string) => onStepTypeChange(step, val)"
               />
               <template v-if="step.step_type === 'email'">
-                <n-input v-model:value="step.subject" :placeholder="t('sequences.form.subjectPlaceholder')" />
+                <div class="subject-input-wrapper">
+                  <n-input
+                    v-model:value="step.subject"
+                    :placeholder="t('sequences.form.subjectPlaceholder')"
+                    @input="(val: string) => debounceScoreSubject(index, val)"
+                  />
+                  <div v-if="stepScores[index] !== undefined" class="mt-1 flex items-center gap-2">
+                    <n-progress
+                      type="line"
+                      :percentage="stepScores[index]"
+                      :show-indicator="false"
+                      :height="6"
+                      :color="getScoreColor(stepScores[index])"
+                      rail-color="#e0e0e0"
+                    />
+                    <n-tooltip trigger="hover" v-if="stepWarnings[index]?.length">
+                      <template #trigger>
+                        <n-tag :type="getScoreTagType(stepScores[index])" size="small" round>
+                          {{ stepScores[index] }}/100
+                        </n-tag>
+                      </template>
+                      <ul class="list-disc pl-4">
+                        <li v-for="w in stepWarnings[index]" :key="w">{{ w }}</li>
+                      </ul>
+                    </n-tooltip>
+                    <n-tag v-else :type="getScoreTagType(stepScores[index])" size="small" round>
+                      {{ stepScores[index] }}/100
+                    </n-tag>
+                  </div>
+                </div>
                 <n-select
                   v-model:value="step.template_id"
                   :options="templateOptions"
@@ -129,6 +158,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Message } from '@/utils'
 import { getSequenceDetail, createSequence, updateSequence, activateSequence } from '@/api/modules/sequences/sequence'
+import { scoreSubject } from '@/api/modules/batch_mail'
 import { getTemplateAll } from '@/api/modules/market/template'
 import GroupSelect from '@/views/contacts/subscribers/components/GroupSelect.vue'
 import { NFormItem, NInput } from 'naive-ui'
@@ -140,6 +170,41 @@ const route = useRoute()
 const router = useRouter()
 const formRef = ref()
 const saving = ref(false)
+
+const stepScores = reactive<Record<number, number>>({})
+const stepWarnings = reactive<Record<number, string[]>>({})
+const scoreTimers = reactive<Record<number, ReturnType<typeof setTimeout>>>({})
+
+function debounceScoreSubject(index: number, val: string) {
+  if (scoreTimers[index]) clearTimeout(scoreTimers[index])
+  if (!val.trim()) {
+    delete stepScores[index]
+    delete stepWarnings[index]
+    return
+  }
+  scoreTimers[index] = setTimeout(async () => {
+    try {
+      const res = await scoreSubject(val)
+      stepScores[index] = res.score
+      stepWarnings[index] = res.warnings || []
+    } catch {
+      delete stepScores[index]
+      delete stepWarnings[index]
+    }
+  }, 500)
+}
+
+function getScoreColor(score: number): string {
+  if (score >= 60) return '#18a058'
+  if (score >= 40) return '#f0a020'
+  return '#d03050'
+}
+
+function getScoreTagType(score: number): 'success' | 'warning' | 'error' {
+  if (score >= 60) return 'success'
+  if (score >= 40) return 'warning'
+  return 'error'
+}
 
 const isEdit = computed(() => !!route.params.id)
 
@@ -408,3 +473,8 @@ onMounted(async () => {
   }
 })
 </script>
+<style scoped>
+.subject-input-wrapper {
+  width: 100%;
+}
+</style>
