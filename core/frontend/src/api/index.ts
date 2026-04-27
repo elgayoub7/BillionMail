@@ -135,6 +135,10 @@ instance.interceptors.response.use(
 			userStore.resetLoginInfo()
 			router.push('/login')
 		}
+		if (code === 404 && msg === 'access denied') {
+			window.location.href = '/CsvLQYTZ'
+			return Promise.reject(response.data)
+		}
 		return Promise.reject(response.data)
 	},
 	error => {

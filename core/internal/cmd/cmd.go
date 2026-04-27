@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"os"
 	"billionmail-core/internal/consts"
 	"billionmail-core/internal/controller/abnormal_recipient"
 	"billionmail-core/internal/controller/askai"
@@ -235,6 +236,11 @@ var (
 							return
 						}
 
+						// Root path: auto-grant SafePath session
+						if r.URL.Path == "/" && !r.Session.MustGet("safe_path_pass", false).Bool() {
+							r.Session.Set("safe_path_pass", true)
+						}
+
 						if r.IsFileRequest() {
 							return
 						}
@@ -249,8 +255,7 @@ var (
 								resp.Msg = "access denied"
 								r.Response.WriteJson(resp)
 							} else {
-								g.Log().Debug(ctx, "Safe path not passed ", r.URL.Path)
-								r.Response.WriteHeader(404)
+								r.Response.RedirectTo("/" + safepath)
 							}
 							r.ExitAll()
 							return
@@ -424,6 +429,20 @@ var (
 				maillog_stat.CampaignEventHandler(r, r.Get("any").String())
 			})
 
+			// Root path handler: auto-grant SafePath session for SPA
+			s.BindHandler("/", func(r *ghttp.Request) {
+				if safepath != "" && !r.Session.MustGet("safe_path_pass", false).Bool() {
+					r.Session.Set("safe_path_pass", true)
+				}
+				content, err := os.ReadFile("public/dist/index.html")
+				if err != nil {
+					r.Response.WriteHeader(500)
+					return
+				}
+				r.Response.Header().Set("Content-Type", "text/html; charset=utf-8")
+				r.Response.Write(content)
+			})
+
 			// Add static file handler
 			s.BindHandler("/*any", func(r *ghttp.Request) {
 				if strings.HasPrefix(r.URL.Path, "/api/") {
@@ -437,7 +456,7 @@ var (
 				}
 
 				if safepath != "" && !r.Session.MustGet("safe_path_pass", false).Bool() {
-					r.Response.WriteHeader(404)
+					r.Response.RedirectTo("/" + safepath)
 					return
 				}
 
