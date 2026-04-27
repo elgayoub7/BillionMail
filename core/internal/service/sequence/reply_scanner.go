@@ -109,6 +109,17 @@ func scanMaildir(ctx context.Context, emailAddr string) {
 				g.Log().Errorf(ctx, "ScanReplyInboxes: failed to update replies for enrollment %d: %v", enrollmentId.Int(), err)
 			} else {
 				g.Log().Infof(ctx, "ScanReplyInboxes: detected reply for enrollment %d (in-reply-to: %s)", enrollmentId.Int(), cleanID)
+
+				// Also increment step replied_count
+				stepId, err2 := g.DB().Model("bm_sequence_email_tasks").
+					Where("message_id = ?", cleanID).
+					Fields("step_id").
+					Value()
+				if err2 == nil && stepId.Int() > 0 {
+					_, _ = g.DB().Exec(ctx,
+						"UPDATE bm_sequence_steps SET replied_count = replied_count + 1 WHERE id = ?",
+						stepId.Int())
+				}
 			}
 
 			// Mark as seen by renaming with :S flag

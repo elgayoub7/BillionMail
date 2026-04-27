@@ -278,6 +278,7 @@ func GetSequenceDetail(ctx context.Context, id int) (*v1.SequenceDetail, error) 
 		OpenedCount     int    `json:"opened_count"`
 		ClickedCount    int    `json:"clicked_count"`
 		BouncedCount    int    `json:"bounced_count"`
+	RepliedCount    int    `json:"replied_count"`
 		TemplateName    string `json:"template_name"`
 	}
 
@@ -311,6 +312,7 @@ func GetSequenceDetail(ctx context.Context, id int) (*v1.SequenceDetail, error) 
 			OpenedCount:     s.OpenedCount,
 			ClickedCount:    s.ClickedCount,
 			BouncedCount:    s.BouncedCount,
+			RepliedCount:    s.RepliedCount,
 		})
 	}
 

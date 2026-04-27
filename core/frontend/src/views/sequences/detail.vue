@@ -13,7 +13,7 @@
               </n-space>
             </template>
             <template v-if="step.step_type === 'email'">
-              <n-grid :cols="4" :x-gap="16">
+              <n-grid :cols="5" :x-gap="16">
                 <n-gi>
                   <n-statistic :label="t('sequences.stats.sent')" :value="step.sent_count" />
                 </n-gi>
@@ -25,6 +25,9 @@
                 </n-gi>
                 <n-gi>
                   <n-statistic :label="t('sequences.stats.bounced')" :value="step.bounced_count" />
+                </n-gi>
+                <n-gi>
+                  <n-statistic label="Replied" :value="step.replied_count" />
                 </n-gi>
               </n-grid>
             </template>

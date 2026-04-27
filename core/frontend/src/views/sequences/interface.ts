@@ -87,6 +87,7 @@ export interface Enrollment {
   total_opens: number
   total_clicks: number
   total_replies: number
+  replied_count: number
 }
 
 export interface EnrollmentParams {

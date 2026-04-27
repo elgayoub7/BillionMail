@@ -32,6 +32,26 @@ func NewTemplateEngine() *TemplateEngine {
 			}
 			return ""
 		},
+		"getCustom": func(data ...interface{}) interface{} {
+			// getCustom searches Subscriber attribs for cold mail variables
+			// Usage: {{ with getCustom "first_name" }}{{ . }}{{ end }}
+			if len(data) >= 2 {
+				if m, ok := data[0].(g.Map); ok {
+					key := ""
+					if k, ok := data[1].(string); ok {
+						key = k
+					}
+					if sub, ok := m["Subscriber"]; ok {
+						if subMap, ok := sub.(map[string]string); ok {
+							if v, exists := subMap[key]; exists && v != "" {
+								return v
+							}
+						}
+					}
+				}
+			}
+			return nil
+		},
 		"UnsubscribeURL": func(data ...interface{}) interface{} {
 			if len(data) > 0 {
 				if m, ok := data[0].(g.Map); ok {
@@ -183,6 +203,9 @@ func (e *TemplateEngine) RenderEmailTemplateWithAPI(ctx context.Context, content
 		"VideoOutreach": videoData,
 		"Enrichment":    enrichmentData,
 	}
+
+	// preprocess cold-mail template syntax ({{ first_name | Friend }})
+	content = GetColdTemplatePreprocessor().Preprocess(content)
 
 	// use template engine to render with error recovery
 	result, err := e.renderWithErrorRecovery(ctx, content, templateData)

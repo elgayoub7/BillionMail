@@ -180,6 +180,7 @@ type SequenceStepItem struct {
 	OpenedCount     int    `json:"opened_count"`
 	ClickedCount    int    `json:"clicked_count"`
 	BouncedCount    int    `json:"bounced_count"`
+	RepliedCount    int    `json:"replied_count"`
 }
 
 // --- Sequence lifecycle ---

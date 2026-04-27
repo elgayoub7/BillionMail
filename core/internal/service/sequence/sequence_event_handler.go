@@ -63,6 +63,11 @@ func RecordEvent(ctx context.Context, eventType, email string, campaignId int, m
 			WhereIn("id", stepIds).
 			Data(g.Map{"clicked_count": gdb.Raw("clicked_count + 1")}).
 			Update()
+	case "reply":
+		g.DB().Model("bm_sequence_steps").
+			WhereIn("id", stepIds).
+			Data(g.Map{"replied_count": gdb.Raw("replied_count + 1")}).
+			Update()
 	}
 
 	go scoring.Scoring().RecordEngagement(context.Background(), email, eventType)
