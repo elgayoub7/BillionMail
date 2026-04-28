@@ -1,12 +1,11 @@
 <template>
-	<div class="h-180px">
+	<div class="chart-wrapper">
 		<bt-charts :options="chartOptions" />
 	</div>
 </template>
 
 <script setup lang="ts">
 import { formatTime } from '@/utils'
-import { useThemeVars } from 'naive-ui'
 
 const { chartName, chartColor, dateType, chartData } = defineProps({
 	chartName: {
@@ -27,63 +26,69 @@ const { chartName, chartColor, dateType, chartData } = defineProps({
 	},
 })
 
-const theme = useThemeVars()
-
-const chartOptions = computed(() => {
-	return {
-		tooltip: {
-			trigger: 'axis',
-			order: 'seriesDesc',
-			axisPointer: {
-				type: 'shadow',
+const chartOptions = computed(() => ({
+	tooltip: {
+		trigger: 'axis',
+		background: '#1a1d27',
+		borderColor: '#2e3142',
+		textStyle: { color: '#e2e8f0', fontSize: 12 },
+		axisPointer: { type: 'line', lineStyle: { color: '#2e3142' } },
+	},
+	grid: {
+		top: '8%',
+		left: '2%',
+		right: '4%',
+		bottom: '2%',
+		containLabel: true,
+	},
+	xAxis: {
+		type: 'category',
+		axisLine: { lineStyle: { color: '#2e3142' } },
+		axisLabel: {
+			color: '#6b7280',
+			fontSize: 11,
+			formatter: (val: string) => {
+				if (dateType === 'hourly') return formatTime(val, 'HH:mm')
+				return formatTime(val, 'MM-dd')
 			},
 		},
-		grid: {
-			top: '16%',
-			left: '2%',
-			right: '2%',
-			bottom: '2%',
-			containLabel: true,
-		},
-		xAxis: {
-			type: 'category',
-			axisLabel: {
-				formatter: (val: string) => {
-					if (dateType === 'hourly') {
-						return formatTime(val, 'HH:mm')
-					}
-					return formatTime(val, 'yyyy-MM-dd')
+		axisTick: { show: false },
+	},
+	yAxis: {
+		name: '%',
+		type: 'value',
+		max: 100,
+		splitLine: { lineStyle: { type: 'dashed', width: 1, color: '#1e2030' } },
+		axisLabel: { color: '#6b7280', fontSize: 11 },
+		axisLine: { show: false },
+	},
+	series: [
+		{
+			name: chartName,
+			type: 'line',
+			data: chartData,
+			itemStyle: { color: chartColor },
+			lineStyle: { width: 2 },
+			areaStyle: {
+				color: {
+					type: 'linear',
+					x: 0, y: 0, x2: 0, y2: 1,
+					colorStops: [
+						{ offset: 0, color: chartColor + '30' },
+						{ offset: 1, color: chartColor + '05' },
+					],
 				},
 			},
+			smooth: true,
+			showSymbol: false,
+			sampling: 'average',
 		},
-		yAxis: {
-			name: '%',
-			type: 'value',
-			splitLine: {
-				show: true,
-				lineStyle: {
-					type: 'dashed',
-					width: 1,
-					color: theme.value.borderColor,
-				},
-			},
-			max: () => {
-				return 100
-			},
-		},
-		series: [
-			{
-				name: chartName,
-				type: 'line',
-				data: chartData,
-				itemStyle: {
-					color: chartColor,
-				},
-				smooth: false,
-				showSymbol: false,
-				sampling: 'average',
-			},
-		],
-	}
-})
+	],
+}))
 </script>
+
+<style lang="scss" scoped>
+.chart-wrapper {
+	height: 200px;
+}
+</style>

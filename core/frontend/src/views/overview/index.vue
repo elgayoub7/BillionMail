@@ -1,48 +1,49 @@
 <template>
-	<div class="email-analytics-container">
-		<div class="bt-title">{{ t('layout.menu.overview') }}</div>
-		<!-- Top Filter Area -->
-		<filter-bar
-			v-model:domain="domain"
-			v-model:date-range="dateRange"
-			@update:domain="handleDataUpdate"
-			@update:date-range="handleDataUpdate">
-		</filter-bar>
+	<div class="dashboard">
+		<div class="dashboard-header">
+			<h1 class="dashboard-title">Dashboard</h1>
+			<filter-bar
+				v-model:domain="domain"
+				v-model:date-range="dateRange"
+				@update:domain="handleDataUpdate"
+				@update:date-range="handleDataUpdate" />
+		</div>
 
-		<!-- Main Metric Cards -->
-		<div class="metrics-cards">
+		<!-- KPI Cards -->
+		<div class="kpi-grid">
 			<metric-card
-				v-for="(item, key) in rateData"
+				v-for="(item, key) in kpiCards"
 				:key="key"
 				:title="item.label"
 				:value="item.value"
-				:unit="item.unit">
-			</metric-card>
-			<metric-card
-				class="cursor-pointer"
-				:title="$t('overview.delayedQueue')"
-				:value="delayedQueue"
-				:text-color="delayedQueue > 0 ? theme.warningColor : ''"
-				@click="onClickDelayedQueue">
-			</metric-card>
+				:unit="item.unit"
+				:icon="item.icon"
+				:onClick="item.key === 'delayed_queue' ? onClickDelayedQueue : undefined" />
 		</div>
 
-		<!-- Data Details Area -->
-		<div class="detail-row">
-			<!-- Left: Mail Provider Table -->
-			<n-card class="provider-table-card" :title="$t('overview.mailProviders')">
-				<provider-table v-model:value="providers" />
-			</n-card>
-
-			<!-- Right: Today's Sending Statistics -->
-			<n-card class="send-today-card" :title="$t('overview.sendStats')">
+		<!-- Main Chart -->
+		<div class="chart-section">
+			<div class="card">
+				<div class="card-header">
+					<span class="card-title">Sending Trends</span>
+				</div>
 				<send-today-stats :data="sendMail" @show-fail="handleShowFail" />
-			</n-card>
+			</div>
 		</div>
 
-		<!-- Bottom Rate Charts Area -->
-		<div class="rate-charts-card">
+		<!-- Rate Charts -->
+		<div class="rate-section">
 			<rate-chart-panel :bounce="bounceRate" :click="clickRate" :open="openRate" />
+		</div>
+
+		<!-- Bottom Row -->
+		<div class="bottom-row">
+			<div class="card bottom-card">
+				<div class="card-header">
+					<span class="card-title">Mail Providers</span>
+				</div>
+				<provider-table v-model:value="providers" />
+			</div>
 		</div>
 
 		<fail-modal />
@@ -80,6 +81,13 @@ const rateData = reactive<RateData>({
 	click_rate: { label: t('overview.clicked'), value: 0, unit: '%' },
 	bounce_rate: { label: t('overview.bounced'), value: 0, unit: '%' },
 })
+
+const kpiCards = computed(() => [
+	{ key: 'delivery_rate', ...rateData.delivery_rate, icon: 'i-mdi:send-check-outline' },
+	{ key: 'open_rate', ...rateData.open_rate, icon: 'i-mdi:email-open-outline' },
+	{ key: 'click_rate', ...rateData.click_rate, icon: 'i-mdi:cursor-default-click-outline' },
+	{ key: 'bounce_rate', ...rateData.bounce_rate, icon: 'i-mdi:email-alert-outline' },
+])
 
 const delayedQueue = ref(0)
 
@@ -129,10 +137,8 @@ const handleShowFail = () => {
 	failModalApi.open()
 }
 
-// Function to handle data update
 const handleDataUpdate = useDebounceFn(fetchOverviewData, 300)
 
-// Function to update rate data
 const updateRateData = (dashboard: MailOverview['dashboard']) => {
 	Object.entries(dashboard).forEach(([key, value]) => {
 		if (key in rateData) {
@@ -142,7 +148,6 @@ const updateRateData = (dashboard: MailOverview['dashboard']) => {
 	delayedQueue.value = dashboard.delayed_queue
 }
 
-// Function to fetch overview data
 async function fetchOverviewData() {
 	const res = await getOverviewInfo({
 		domain: domain.value,
@@ -152,7 +157,6 @@ async function fetchOverviewData() {
 
 	if (isObject<MailOverview>(res)) {
 		updateRateData(res.dashboard)
-
 		providers.value = isArray(res.mail_providers) ? res.mail_providers : []
 		sendMail.value = res.send_mail_chart
 		bounceRate.value = res.bounce_rate_chart
@@ -167,30 +171,82 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
-.email-analytics-container {
+.dashboard {
+	padding: 24px;
+}
+
+.dashboard-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 24px;
+}
+
+.dashboard-title {
+	margin: 0;
+	font-size: 22px;
+	font-weight: 700;
+	color: #e2e8f0;
+}
+
+.kpi-grid {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 16px;
+	margin-bottom: 24px;
+}
+
+.card {
+	background: #1a1d27;
+	border: 1px solid #2e3142;
+	border-radius: 12px;
 	padding: 20px;
 }
 
-.metrics-cards {
+.card-header {
 	display: flex;
 	justify-content: space-between;
-	gap: 20px;
-	margin-bottom: 20px;
+	align-items: center;
+	margin-bottom: 16px;
 }
 
-.detail-row {
-	display: flex;
-	gap: 20px;
-	margin-bottom: 20px;
+.card-title {
+	font-size: 15px;
+	font-weight: 600;
+	color: #e2e8f0;
+}
 
-	.provider-table-card,
-	.send-today-card {
-		flex: 1;
+.chart-section {
+	margin-bottom: 24px;
+}
+
+.rate-section {
+	margin-bottom: 24px;
+
+	:deep(.n-card) {
+		background: #1a1d27;
+		border: 1px solid #2e3142;
+		border-radius: 12px;
 	}
 }
 
-.rate-charts-card {
-	display: flex;
-	gap: 20px;
+.bottom-row {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 16px;
+}
+
+.bottom-card {
+	:deep(.n-data-table) {
+		--n-td-color: transparent;
+		--n-th-color: transparent;
+		--n-border-color: #2e3142;
+	}
+}
+
+@media (max-width: 1200px) {
+	.kpi-grid {
+		grid-template-columns: repeat(2, 1fr);
+	}
 }
 </style>

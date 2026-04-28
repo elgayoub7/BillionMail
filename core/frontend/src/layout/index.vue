@@ -1,23 +1,52 @@
 <template>
 	<div class="app-layout">
-		<TheSidebar />
-		<div class="app-main">
-			<TheTopBar />
-			<div class="app-content">
-				<router-view :key="key" v-slot="{ Component, route }">
-					<component :is="Component" :key="route.path" />
-				</router-view>
+		<sidebar></sidebar>
+		<div class="app-main-wrapper" :style="{ marginLeft: isCollapse ? '64px' : '240px' }">
+			<div class="app-content-scroll" :style="{ paddingTop: '48px' }" @scroll="handleScroll">
+				<app-header :top="scrollTop" @toggle-sidebar="handleToggleSidebar"></app-header>
+				<app-main></app-main>
 			</div>
 		</div>
 	</div>
 </template>
+
 <script lang="ts" setup>
-import TheSidebar from './TheSidebar.vue'
-import TheTopBar from './TheTopBar.vue'
-const key = computed(() => Math.random())
+import { storeToRefs } from 'pinia'
+import { Sidebar, AppHeader, AppMain } from './components'
+import { useGlobalStore } from '@/store'
+
+const globalStore = useGlobalStore()
+const { isCollapse } = storeToRefs(globalStore)
+
+const scrollTop = ref(0)
+
+const handleScroll = (e: Event) => {
+	scrollTop.value = (e.target as HTMLElement).scrollTop || 0
+}
+
+const handleToggleSidebar = () => {
+	globalStore.setCollapse()
+}
 </script>
-<style scoped>
-.app-layout { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
-.app-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #0f1117; }
-.app-content { flex: 1; overflow-y: auto; }
+
+<style lang="scss" scoped>
+.app-layout {
+	display: flex;
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+}
+
+.app-main-wrapper {
+	flex: 1;
+	height: 100%;
+	transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+	overflow: hidden;
+}
+
+.app-content-scroll {
+	height: 100%;
+	overflow-y: auto;
+	overflow-x: hidden;
+}
 </style>

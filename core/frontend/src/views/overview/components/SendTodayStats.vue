@@ -108,21 +108,22 @@ const barChartData = computed(() => {
 .stats-header {
 	display: flex;
 	justify-content: space-around;
-	margin-bottom: 20px;
+	margin-bottom: 16px;
 
 	.stat-item {
 		text-align: center;
 	}
 
 	.stat-label {
-		font-size: 14px;
-		color: var(--color-text-2);
-		margin-bottom: 5px;
+		font-size: 13px;
+		color: #8892a8;
+		margin-bottom: 4px;
 	}
 
 	.stat-value {
-		font-size: 18px;
-		font-weight: bold;
+		font-size: 20px;
+		font-weight: 700;
+		color: #e2e8f0;
 	}
 }
 </style>

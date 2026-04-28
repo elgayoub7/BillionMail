@@ -1,28 +1,36 @@
 <template>
-	<n-card :title="$t('overview.rate.openRate')">
-		<line-chart
-			chart-color="#1a519b"
-			:date-type="open.column_type"
-			:chart-name="$t('overview.rate.openRate')"
-			:chart-data="openRateData">
-		</line-chart>
-	</n-card>
-	<n-card :title="$t('overview.rate.clickRate')">
-		<line-chart
-			chart-color="#1a519b"
-			:date-type="click.column_type"
-			:chart-name="$t('overview.rate.clickRate')"
-			:chart-data="clickRateData">
-		</line-chart>
-	</n-card>
-	<n-card :title="$t('overview.rate.bounceRate')">
-		<line-chart
-			chart-color="#20a53a"
-			:date-type="bounce.column_type"
-			:chart-name="$t('overview.rate.bounceRate')"
-			:chart-data="bounceRateData">
-		</line-chart>
-	</n-card>
+	<div class="rate-charts">
+		<div class="card">
+			<div class="card-header">
+				<span class="card-title">Open Rate</span>
+			</div>
+			<line-chart
+				chart-color="#6c5ce7"
+				:date-type="open.column_type"
+				chart-name="Open Rate"
+				:chart-data="openRateData" />
+		</div>
+		<div class="card">
+			<div class="card-header">
+				<span class="card-title">Click Rate</span>
+			</div>
+			<line-chart
+				chart-color="#22c55e"
+				:date-type="click.column_type"
+				chart-name="Click Rate"
+				:chart-data="clickRateData" />
+		</div>
+		<div class="card">
+			<div class="card-header">
+				<span class="card-title">Bounce Rate</span>
+			</div>
+			<line-chart
+				chart-color="#ef4444"
+				:date-type="bounce.column_type"
+				chart-name="Bounce Rate"
+				:chart-data="bounceRateData" />
+		</div>
+	</div>
 </template>
 
 <script setup lang="ts">
@@ -62,21 +70,46 @@ const getChartTime = (type: string, x: number) => {
 	return formatTime(date, format)
 }
 
-const openRateData = computed(() => {
-	return open.data.map(item => {
-		return [getChartTime(open.column_type, item.x), item.open_rate] as [string, number]
-	})
-})
+const openRateData = computed(() =>
+	open.data.map(item => [getChartTime(open.column_type, item.x), item.open_rate] as [string, number])
+)
 
-const clickRateData = computed(() => {
-	return click.data.map(item => {
-		return [getChartTime(click.column_type, item.x), item.click_rate] as [string, number]
-	})
-})
+const clickRateData = computed(() =>
+	click.data.map(item => [getChartTime(click.column_type, item.x), item.click_rate] as [string, number])
+)
 
-const bounceRateData = computed(() => {
-	return bounce.data.map(item => {
-		return [getChartTime(bounce.column_type, item.x), item.bounce_rate] as [string, number]
-	})
-})
+const bounceRateData = computed(() =>
+	bounce.data.map(item => [getChartTime(bounce.column_type, item.x), item.bounce_rate] as [string, number])
+)
 </script>
+
+<style lang="scss" scoped>
+.rate-charts {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 16px;
+}
+
+.card {
+	background: #1a1d27;
+	border: 1px solid #2e3142;
+	border-radius: 12px;
+	padding: 20px;
+}
+
+.card-header {
+	margin-bottom: 12px;
+}
+
+.card-title {
+	font-size: 15px;
+	font-weight: 600;
+	color: #e2e8f0;
+}
+
+@media (max-width: 1200px) {
+	.rate-charts {
+		grid-template-columns: 1fr;
+	}
+}
+</style>

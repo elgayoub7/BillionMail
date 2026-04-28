@@ -1,211 +1,286 @@
 <template>
-	<n-layout-sider
-		collapse-mode="width"
-		:collapsed="isCollapse"
-		:width="200"
-		:collapsed-width="64"
-		:content-style="{
-			display: 'flex',
-			flexDirection: 'column',
-			height: '100%',
-			overflow: 'hidden',
-		}">
-		<!-- 应用标志和名称 -->
-		<div class="app-logo" :class="{ collapse: isCollapse }">
-			<a href="/">
-				<img class="icon" src="@/assets/images/logo.png"></img>
-				<span v-show="!isCollapse" class="app-name">BillionMail</span>
-			</a>
+	<div class="sidebar" :class="{ collapsed: isCollapse }">
+		<!-- Logo -->
+		<div class="sidebar-logo">
+			<router-link to="/overview" class="logo-link">
+				<img class="logo-icon" src="@/assets/images/logo.png" alt="BillionMail" />
+				<span v-show="!isCollapse" class="logo-text">BillionMail</span>
+			</router-link>
 		</div>
 
-		<!-- 导航菜单 -->
-		<div class="nav-section">
-			<n-menu
-				:value="activeMenuKey"
-				:collapsed="isCollapse"
-				:collapsed-width="64"
-				:options="menuOptions"
-				:root-indent="24"
-				@update:value="handleUpdateMenu">
-			</n-menu>
+		<!-- Navigation -->
+		<nav class="sidebar-nav">
+			<template v-for="group in menuGroups" :key="group.label">
+				<div class="nav-group">
+					<div class="nav-group-label">
+						<span v-if="isCollapse" class="nav-group-dot"></span>
+						<span v-else>{{ group.label }}</span>
+					</div>
+					<router-link
+						v-for="item in group.items"
+						:key="item.key"
+						:to="item.route"
+						class="nav-item"
+						:class="{ active: isActive(item.key) }"
+						:title="isCollapse ? item.label : ''">
+						<span class="nav-item-icon">
+							<i :class="item.icon"></i>
+							<span v-if="item.badge && item.badge > 0" class="nav-badge">{{ item.badge > 99 ? '99+' : item.badge }}</span>
+						</span>
+						<span v-show="!isCollapse" class="nav-item-label">{{ item.label }}</span>
+					</router-link>
+				</div>
+			</template>
+		</nav>
+
+		<!-- Footer -->
+		<div class="sidebar-footer">
+			<router-link to="/settings" class="nav-item" title="Settings">
+				<span class="nav-item-icon"><i class="i-mdi:cog-outline"></i></span>
+				<span v-show="!isCollapse" class="nav-item-label">Settings</span>
+			</router-link>
 		</div>
-		<!-- 退出登录 -->
-		<div class="footer-section">
-			<n-menu
-				value=""
-				:collapsed="isCollapse"
-				:collapsed-width="64"
-				:options="logoutOptions"
-				:root-indent="24"
-				@update:value="handleUpdateMenu">
-			</n-menu>
-		</div>
-	</n-layout-sider>
+	</div>
 </template>
 
-<script lang="tsx" setup>
-import { VNodeChild } from 'vue'
-import { MenuOption } from 'naive-ui'
+<script lang="ts" setup>
 import { storeToRefs } from 'pinia'
-import { RouterLink } from 'vue-router'
-import { useMenuStore, useGlobalStore, useUserStore } from '@/store'
-import { menuList } from '@/router/router'
-
-const { t } = useI18n()
+import { useGlobalStore } from '@/store'
 
 const route = useRoute()
-
-const menuStore = useMenuStore()
-const userStore = useUserStore()
 const globalStore = useGlobalStore()
-
 const { isCollapse } = storeToRefs(globalStore)
 
-// 当前菜单名称
-const activeMenuKey = computed(() => {
-	return String(route.meta?.key || '')
-})
+const unreadCount = ref(0)
 
-// 路由菜单
-const routerMenus = computed(() => {
-	return menuStore.menuList.filter(route => route.meta && !route.meta.hidden)
-})
+const isActive = (key: string) => {
+	return String(route.meta?.key || '').startsWith(key)
+}
 
-// 导航菜单选项
-const menuOptions = computed(() => {
-	return routerMenus.value.map(route => {
-		const name = String(route.children?.[0]?.name || '')
-		const key = String(route.meta?.key || '')
-		const titleKey = String(route.meta?.titleKey || '')
-		const title = titleKey ? t(titleKey) : String(route.meta?.title || '')
-		return {
-			key,
-			label: () => renderLabel(name, title),
-			icon: () => renderIcon(key),
-		}
-	})
-})
+interface MenuItem {
+	key: string
+	label: string
+	icon: string
+	route: string
+	badge?: number
+}
 
-const logoutOptions = ref<MenuOption[]>([
+interface MenuGroup {
+	label: string
+	items: MenuItem[]
+}
+
+const menuGroups = computed<MenuGroup[]>(() => [
 	{
-		key: 'logout',
-		label: () => <span class="ml-10px">{t('layout.menu.logout')}</span>,
-		icon: () => renderIcon('logout'),
+		label: 'DASHBOARD',
+		items: [
+			{ key: 'overview', label: 'Dashboard', icon: 'i-mdi:view-dashboard-outline', route: '/overview' },
+		],
+	},
+	{
+		label: 'OUTREACH',
+		items: [
+			{ key: 'sequences', label: 'Campaigns', icon: 'i-mdi:rocket-launch-outline', route: '/sequences' },
+			{ key: 'inbox', label: 'Inbox', icon: 'i-mdi:email-outline', route: '/inbox', badge: unreadCount.value },
+			{ key: 'template', label: 'Templates', icon: 'i-mdi:file-document-edit-outline', route: '/template' },
+		],
+	},
+	{
+		label: 'CONTACTS',
+		items: [
+			{ key: 'contacts', label: 'Contacts', icon: 'i-mdi:account-group-outline', route: '/contacts' },
+		],
+	},
+	{
+		label: 'ANALYTICS',
+		items: [
+			{ key: 'logs', label: 'Analytics', icon: 'i-mdi:chart-areaspline', route: '/logs' },
+			{ key: 'domain', label: 'Domains', icon: 'i-mdi:dns-outline', route: '/domain' },
+			{ key: 'mailbox', label: 'Mailboxes', icon: 'i-mdi:email-fast-outline', route: '/mailbox' },
+		],
 	},
 ])
 
-const renderLabel = (name: string, title: string) => {
-	return (
-		<RouterLink class="flex items-center" to={{ name }}>
-			<span>{title}</span>
-		</RouterLink>
-	)
-}
-
-const iconMap: Record<string, VNodeChild> = {
-	overview: <i class="i-mdi-web"></i>,
-	market: <i class="i-mdi-email-fast-outline"></i>,
-	api: <i class="i-mdi-chart-line"></i>,
-	contacts: <i class="i-mdi-user-multiple-outline"></i>,
-	sequences: <i class="i-mdi-email-sync-outline"></i>,
-	leads: <i class="i-mdi-account-search-outline"></i>,
-	enrichment: <i class="i-mdi-database-search-outline"></i>,
-	domain: <i class="i-mdi-web"></i>,
-	mailbox: <i class="i-custom:mailbox"></i>,
-	smtp: <i class="i-custom:smtp"></i>,
-	settings: <i class="i-mdi-settings-outline"></i>,
-	template: <i class="i-mdi-settings-outline"></i>,
-	logs: <i class="i-icon-park-outline:log"></i>,
-	'video-outreach': <i class="i-mdi-video-outline"></i>,
-	'cold-dashboard': <i class="i-mdi-monitor-dashboard"></i>,
-	'scoring': <i class="i-mdi-star-circle-outline"></i>,
-	'domain-health': <i class="i-mdi-shield-check-outline"></i>,
-	logout: <i class="i-mdi-logout"></i>,
-}
-
-const renderIcon = (key: string) => {
-	return iconMap[key]
-}
-
-const handleUpdateMenu = (key: string) => {
-	if (key === 'logout') {        
-		userStore.logout()
-	}
-	if (key === 'webmail') {
-		const route = routerMenus.value.find(item => item.meta?.key === 'webmail')
-		if (route) {
-			const href = String(route.meta?.href)
-			window.open(href)
-		}
-	}
-}
-
-onMounted(() => {
-	menuStore.setMenuList(menuList)
-})
+// Future: poll unread count for inbox badge
+// onMounted(() => {
+//   pollUnread()
+// })
 </script>
 
 <style lang="scss" scoped>
-.n-layout-sider {
-	box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-	z-index: 1010;
+.sidebar {
+	width: 240px;
+	height: 100vh;
+	background: #0d0f16;
+	border-right: 1px solid #1e2030;
+	display: flex;
+	flex-direction: column;
+	transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+	flex-shrink: 0;
+	overflow: hidden;
+
+	&.collapsed {
+		width: 64px;
+
+		.sidebar-logo {
+			padding: 16px 0;
+			justify-content: center;
+		}
+
+		.nav-item {
+			justify-content: center;
+			padding: 10px 0;
+
+			.nav-item-label {
+				display: none;
+			}
+		}
+
+		.nav-group-label {
+			justify-content: center;
+		}
+	}
 }
 
-.app-logo {
+.sidebar-logo {
+	padding: 16px 20px;
+	border-bottom: 1px solid #1e2030;
 	display: flex;
-	padding: 16px 24px;
-	border-bottom: 1px solid var(--color-border-1);
-	transition: all 0.3s ease;
+	align-items: center;
+	transition: all 0.25s ease;
 
-	&.collapse {
-		justify-content: center;
-		padding: 16px 0;
-	}
-
-	a {
+	.logo-link {
 		display: flex;
 		align-items: center;
 		gap: 10px;
+		text-decoration: none;
+		white-space: nowrap;
+		overflow: hidden;
 	}
 
-	.icon {
-		width: 36px;
+	.logo-icon {
+		width: 32px;
+		height: 32px;
+		flex-shrink: 0;
 	}
-	
-	.app-name {
-		font-size: 19px;
-		font-weight: bold;
-		color: var(--color-text-5);
+
+	.logo-text {
+		font-size: 17px;
+		font-weight: 700;
+		color: #e2e8f0;
+		letter-spacing: -0.3px;
 	}
 }
 
-.nav-section {
+.sidebar-nav {
 	flex: 1;
-	overflow: auto;
+	overflow-y: auto;
+	overflow-x: hidden;
+	padding: 8px 0;
+
+	&::-webkit-scrollbar {
+		width: 0;
+	}
 }
 
-.footer-section {
-	border-top: 1px solid var(--color-border-1);
-	transition: all 0.3s ease;
+.nav-group {
+	margin-bottom: 4px;
 }
 
-.n-menu {
-	--n-item-height: 48px;
-	--n-font-size: 14px;
-	padding: 16px 0;
+.nav-group-label {
+	padding: 12px 20px 6px;
+	font-size: 11px;
+	font-weight: 600;
+	color: #4a5568;
+	letter-spacing: 1px;
+	text-transform: uppercase;
+	white-space: nowrap;
+	display: flex;
+	align-items: center;
 
-	:deep(.n-menu-item) {
-		margin-top: 0;
-		margin-bottom: 8px;
+	.nav-group-dot {
+		width: 4px;
+		height: 4px;
+		border-radius: 50%;
+		background: #4a5568;
+	}
+}
 
-		&:last-of-type {
-			margin-bottom: 0;
+.nav-item {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 10px 20px;
+	color: #8892a8;
+	text-decoration: none;
+	font-size: 14px;
+	font-weight: 500;
+	transition: all 0.15s ease;
+	cursor: pointer;
+	white-space: nowrap;
+	position: relative;
+	margin: 1px 8px;
+	border-radius: 8px;
+
+	&:hover {
+		color: #e2e8f0;
+		background: rgba(108, 92, 231, 0.08);
+	}
+
+	&.active {
+		color: #a78bfa;
+		background: rgba(108, 92, 231, 0.15);
+
+		.nav-item-icon i {
+			color: #a78bfa;
 		}
+	}
+}
 
-		.n-menu-item-content {
-			padding-right: 24px;
-			line-height: 24px;
-		}
+.nav-item-icon {
+	position: relative;
+	width: 20px;
+	height: 20px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+
+	i {
+		font-size: 20px;
+		transition: color 0.15s ease;
+	}
+}
+
+.nav-badge {
+	position: absolute;
+	top: -6px;
+	right: -8px;
+	min-width: 18px;
+	height: 18px;
+	padding: 0 5px;
+	background: #ef4444;
+	color: #fff;
+	font-size: 10px;
+	font-weight: 700;
+	border-radius: 9px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	line-height: 1;
+}
+
+.nav-item-label {
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.sidebar-footer {
+	border-top: 1px solid #1e2030;
+	padding: 8px 0;
+
+	.nav-item {
+		margin: 0 8px;
 	}
 }
 </style>

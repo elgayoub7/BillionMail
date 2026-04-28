@@ -1,243 +1,181 @@
 <template>
-	<div class="p-24px">
-		<div class="bt-title">{{ t('layout.menu.mailboxes') }}</div>
-		<bt-table-layout>
-			<template #toolsLeft>
-				<n-button type="primary" @click="handleAdd">{{ t('mailbox.actions.add') }}</n-button>
-				<n-button @click="handleBatchAdd">{{ $t('mailbox.actions.batchAdd') }}</n-button>
-				<n-button @click="handleImport">{{ $t('common.actions.import') }}</n-button>
-				<n-button @click="handleExport">{{ t('mailbox.actions.exportAll') }}</n-button>
-			</template>
-			<template #toolsRight>
-				<div class="w-220px">
-					<domain-select v-model:value="tableParams.domain" @update:value="() => resetTable()">
-					</domain-select>
-				</div>
+	<div class="mailbox-page">
+		<div class="page-header">
+			<h1 class="page-title">Mailboxes</h1>
+			<div class="header-actions">
 				<bt-search
 					v-model:value="tableParams.keyword"
-					:width="280"
-					:placeholder="t('mailbox.search.usernamePlaceholder')"
-					@search="() => resetTable()">
-				</bt-search>
-			</template>
-			<template #table>
-				<n-data-table v-bind="tableProps" :columns="columns">
-					<template #empty>
-						<bt-table-help> </bt-table-help>
-					</template>
-				</n-data-table>
-			</template>
-			<template #pageLeft>
-				<bt-table-batch v-bind="batchProps" :options="batchOptions" @select="handleBatchSelect">
-				</bt-table-batch>
-			</template>
-			<template #pageRight>
-				<bt-table-page v-bind="pageProps" @refresh="fetchTable"> </bt-table-page>
-			</template>
-			<template #modal>
-				<form-modal></form-modal>
-				<batch-add-modal ref="batchAddRef" @refresh="fetchTable"></batch-add-modal>
-				<import-modal ref="importRef" @refresh="fetchTable"></import-modal>
-				<export-modal ref="exportRef"></export-modal>
-			</template>
-		</bt-table-layout>
+					placeholder="Search mailboxes..."
+					@search="resetTable" />
+				<domain-select v-model:value="tableParams.domain" @update:value="resetTable" />
+				<n-button type="primary" @click="handleAdd">
+					<template #icon><i class="i-mdi:plus"></i></template>
+					Add
+				</n-button>
+				<n-button @click="handleBatchAdd">Batch</n-button>
+				<n-button @click="handleImport">Import</n-button>
+			</div>
+		</div>
+
+		<!-- Mailbox Cards -->
+		<div v-if="tableProps.data?.length" class="cards-grid">
+			<div v-for="row in tableProps.data" :key="row.username" class="mailbox-card">
+				<div class="card-top">
+					<div class="card-info">
+						<h3 class="card-email">{{ row.username }}</h3>
+						<span class="card-domain">{{ row.domain }}</span>
+					</div>
+					<n-switch
+						:value="row.active"
+						:checked-value="1"
+						:unchecked-value="0"
+						size="small"
+						@update:value="val => handleStatusChange(row, val)" />
+				</div>
+
+				<!-- Health Score -->
+				<div class="health-section">
+					<div class="health-header">
+						<span class="health-label">Health Score</span>
+						<span class="health-value" :class="getHealthClass(85)">{{ getHealthLabel(85) }}</span>
+					</div>
+					<div class="health-bar">
+						<div class="health-fill" :style="{ width: '85%' }"></div>
+					</div>
+				</div>
+
+				<!-- Daily Limit -->
+				<div class="daily-section">
+					<div class="daily-header">
+						<span class="daily-label">Daily Sending</span>
+						<span class="daily-value">-- / 200</span>
+					</div>
+					<div class="daily-bar">
+						<div class="daily-fill" :style="{ width: '0%' }"></div>
+					</div>
+				</div>
+
+				<!-- Meta Info -->
+				<div class="card-meta">
+					<span v-if="row.full_name" class="meta-item">
+						<i class="i-mdi:account-outline"></i>
+						{{ row.full_name }}
+					</span>
+					<span class="meta-item">
+						<i class="i-custom:smtp"></i>
+						{{ row.is_admin ? 'Admin' : 'General' }}
+					</span>
+				</div>
+
+				<!-- Actions -->
+				<div class="card-actions">
+					<n-button quaternary size="small" @click="handleCopyLogin(row)">
+						<i class="i-mdi:content-copy"></i>
+						Login Info
+					</n-button>
+					<n-button quaternary size="small" @click="handleEdit(row)">
+						<i class="i-mdi:pencil-outline"></i>
+						Edit
+					</n-button>
+					<n-popconfirm @positive-click="handleDelete(row)">
+						<template #trigger>
+							<n-button quaternary size="small" type="error">
+								<i class="i-mdi:delete-outline"></i>
+							</n-button>
+						</template>
+						Delete {{ row.username }}?
+					</n-popconfirm>
+				</div>
+			</div>
+		</div>
+
+		<!-- Empty -->
+		<div v-else class="empty-state">
+			<i class="i-mdi:email-fast-outline empty-icon"></i>
+			<h3>No mailboxes</h3>
+			<p>Add your first mailbox to get started</p>
+		</div>
+
+		<!-- Pagination -->
+		<div v-if="pageProps.total > 0" class="pagination-bar">
+			<bt-table-page v-bind="pageProps" @refresh="fetchTable" />
+		</div>
+
+		<!-- Modals -->
+		<form-modal />
+		<batch-add-modal ref="batchAddRef" @refresh="fetchTable" />
+		<import-modal ref="importRef" @refresh="fetchTable" />
 	</div>
 </template>
 
-<script lang="tsx" setup>
-import { DataTableColumns, NButton, NFlex, NSwitch } from 'naive-ui'
+<script lang="ts" setup>
 import { useBrowserLocation } from '@vueuse/core'
-import { confirm, getByteUnit } from '@/utils'
+import { confirm } from '@/utils'
 import { useModal } from '@/hooks/modal/useModal'
 import { useCopy } from '@/hooks/useCopy'
 import { useDataTable } from '@/hooks/useDataTable'
 import { deleteMailbox, getMailboxList, updateMailbox } from '@/api/modules/mailbox'
-import { MailBox, MailBoxParams } from './interface'
+import type { MailBox, MailBoxParams } from './interface'
 
-import TablePassword from '@/components/base/bt-table-password/index.vue'
 import DomainSelect from './components/DomainSelect.vue'
 import MailboxForm from './components/MailboxForm.vue'
 import BatchAddModal from './components/MailboxBatchAdd.vue'
 import ImportModal from './components/MailboxImport.vue'
-import ExportModal from './components/MailboxExport.vue'
-
-const location = useBrowserLocation()
 
 const { t } = useI18n()
-
+const location = useBrowserLocation()
 const { copyText } = useCopy()
-
 const batchAddRef = useTemplateRef('batchAddRef')
-
-const handleBatchAdd = () => {
-	batchAddRef.value?.open()
-}
-
 const importRef = useTemplateRef('importRef')
 
-const handleImport = () => {
-	importRef.value?.open()
+const getHealthClass = (score: number) => {
+	if (score >= 80) return 'health-good'
+	if (score >= 50) return 'health-warn'
+	return 'health-bad'
 }
 
-const exportRef = useTemplateRef('exportRef')
+const getHealthLabel = (score: number) => `${score}/100`
 
-const handleExport = () => {
-	exportRef.value?.open(tableParams.value.domain)
-}
-
-const { tableParams, tableProps, pageProps, batchProps, fetchTable, resetTable } = useDataTable<
-	MailBox,
-	MailBoxParams
->({
+const { tableParams, tableProps, pageProps, fetchTable, resetTable } = useDataTable<MailBox, MailBoxParams>({
 	loading: true,
 	immediate: true,
 	params: {
 		page: 1,
-		page_size: 10,
-		domain: location.value.state.domain || '',
+		page_size: 12,
+		domain: location.value?.state?.domain || '',
 		keyword: '',
 	},
 	rowKey: row => row.username,
 	fetchFn: getMailboxList,
 })
 
-// Table columns
-const columns = ref<DataTableColumns<MailBox>>([
-	{
-		type: 'selection',
-		width: 40,
-	},
-	{
-		key: 'username',
-		title: t('mailbox.columns.username'),
-		width: '14%',
-		minWidth: 120,
-		ellipsis: {
-			tooltip: true,
-		},
-	},
-	{
-		key: 'password',
-		title: t('mailbox.columns.password'),
-		width: '16%',
-		minWidth: 140,
-		render: row => <TablePassword value={row.password || `--`} />,
-	},
-	{
-		key: 'login',
-		title: t('mailbox.columns.loginInfo'),
-		ellipsis: {
-			tooltip: true,
-		},
-		minWidth: 140,
-		render: row => {
-			return (
-				<div class="flex justify-center w-160px">
-					<NButton
-						text
-						type="primary"
-						onClick={() => {
-							copyText(
-								t('mailbox.loginInfo.template', {
-									webmail: window.location.origin + '/roundcube',
-									username: row.username,
-									password: row.password,
-									mx: row.mx,
-								})
-							)
-						}}>
-						{t('common.actions.copy')}
-					</NButton>
-				</div>
-			)
-		},
-	},
-	{
-		key: 'quota',
-		title: t('mailbox.columns.quota'),
-		width: '18%',
-		minWidth: 160,
-		render: row => {
-			if (row.quota_active === 1) {
-				return `${getByteUnit(row.used_quota)} / ${getByteUnit(row.quota)}`
-			}
-			return <i class="i-common:quota w-20px h-20px"></i>
-		},
-	},
-	// {
-	// 	key: 'quota',
-	// 	title: t('mailbox.columns.quota'),
-	// 	width: '18%',
-	// 	minWidth: 160,
-	// 	render: row => `${getByteUnit(row.quota)}`,
-	// },
-	{
-		key: 'is_admin',
-		title: t('mailbox.columns.type'),
-		width: '12%',
-		minWidth: 100,
-		render: row => {
-			return row.is_admin === 1 ? t('mailbox.userType.admin') : t('mailbox.userType.general')
-		},
-	},
-	{
-		key: 'status',
-		title: t('mailbox.columns.status'),
-		width: '10%',
-		minWidth: 80,
-		render: row => {
-			return (
-				<NSwitch
-					value={row.active}
-					checked-value={1}
-					unchecked-value={0}
-					size="small"
-					onUpdateValue={val => {
-						handleStatusChange(row, val)
-					}}
-				/>
-			)
-		},
-	},
-	{
-		title: t('common.columns.actions'),
-		key: 'actions',
-		align: 'right',
-		width: 120,
-		render: row => (
-			<NFlex inline={true}>
-				<NButton
-					type="primary"
-					text={true}
-					onClick={() => {
-						handleEdit(row)
-					}}>
-					{t('common.actions.edit')}
-				</NButton>
-				<NButton
-					type="error"
-					text={true}
-					onClick={() => {
-						handleDelete(row)
-					}}>
-					{t('common.actions.delete')}
-				</NButton>
-			</NFlex>
-		),
-	},
-])
-
 const [FormModal, formModalApi] = useModal({
 	component: MailboxForm,
-	state: {
-		isEdit: false,
-		refresh: fetchTable,
-	},
+	state: { isEdit: false, refresh: fetchTable },
 })
 
 const handleAdd = () => {
 	formModalApi.setState({ isEdit: false, row: null })
 	formModalApi.open()
+}
+
+const handleBatchAdd = () => {
+	batchAddRef.value?.open()
+}
+
+const handleImport = () => {
+	importRef.value?.open()
+}
+
+const handleCopyLogin = (row: MailBox) => {
+	copyText(
+		t('mailbox.loginInfo.template', {
+			webmail: window.location.origin + '/roundcube',
+			username: row.username,
+			password: row.password,
+			mx: row.mx,
+		})
+	)
 }
 
 const handleStatusChange = async (row: MailBox, val: number) => {
@@ -269,32 +207,185 @@ const handleDelete = (row: MailBox) => {
 		},
 	})
 }
+</script>
 
-const batchOptions = [
-	{
-		label: t('common.actions.delete'),
-		value: 'delete',
-	},
-]
+<style lang="scss" scoped>
+.mailbox-page {
+	padding: 24px;
+}
 
-const handleBatchSelect = (key: string, keys: string[]) => {
-	switch (key) {
-		case 'delete':
-			handleBatchDelete(keys)
-			break
+.page-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 24px;
+}
+
+.page-title {
+	margin: 0;
+	font-size: 22px;
+	font-weight: 700;
+	color: #e2e8f0;
+}
+
+.header-actions {
+	display: flex;
+	gap: 10px;
+	align-items: center;
+}
+
+.cards-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+	gap: 16px;
+}
+
+.mailbox-card {
+	background: #1a1d27;
+	border: 1px solid #2e3142;
+	border-radius: 12px;
+	padding: 20px;
+	transition: all 0.2s ease;
+
+	&:hover {
+		border-color: #6c5ce7;
 	}
 }
 
-const handleBatchDelete = (keys: string[]) => {
-	confirm({
-		title: t('mailbox.actions.batchDelete'),
-		content: t('mailbox.delete.batchConfirm', { count: keys.length }),
-		confirmText: t('common.actions.delete'),
-		confirmType: 'error',
-		onConfirm: async () => {
-			await deleteMailbox({ emails: keys })
-			fetchTable()
-		},
-	})
+.card-top {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	margin-bottom: 16px;
 }
-</script>
+
+.card-info {
+	min-width: 0;
+	flex: 1;
+}
+
+.card-email {
+	margin: 0;
+	font-size: 16px;
+	font-weight: 600;
+	color: #e2e8f0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.card-domain {
+	font-size: 12px;
+	color: #6b7280;
+}
+
+.health-section,
+.daily-section {
+	margin-bottom: 12px;
+}
+
+.health-header,
+.daily-header {
+	display: flex;
+	justify-content: space-between;
+	margin-bottom: 6px;
+}
+
+.health-label,
+.daily-label {
+	font-size: 12px;
+	color: #8892a8;
+}
+
+.health-value {
+	font-size: 13px;
+	font-weight: 600;
+
+	&.health-good { color: #22c55e; }
+	&.health-warn { color: #f59e0b; }
+	&.health-bad { color: #ef4444; }
+}
+
+.daily-value {
+	font-size: 13px;
+	font-weight: 600;
+	color: #e2e8f0;
+}
+
+.health-bar,
+.daily-bar {
+	height: 6px;
+	background: #2e3142;
+	border-radius: 3px;
+	overflow: hidden;
+}
+
+.health-fill {
+	height: 100%;
+	background: linear-gradient(90deg, #22c55e, #4ade80);
+	border-radius: 3px;
+	transition: width 0.3s ease;
+}
+
+.daily-fill {
+	height: 100%;
+	background: linear-gradient(90deg, #6c5ce7, #a78bfa);
+	border-radius: 3px;
+	transition: width 0.3s ease;
+}
+
+.card-meta {
+	display: flex;
+	gap: 16px;
+	margin-bottom: 12px;
+}
+
+.meta-item {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 12px;
+	color: #6b7280;
+
+	i {
+		font-size: 14px;
+	}
+}
+
+.card-actions {
+	display: flex;
+	gap: 4px;
+	border-top: 1px solid #2e3142;
+	padding-top: 12px;
+}
+
+.empty-state {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding: 80px 20px;
+	color: #6b7280;
+
+	h3 {
+		font-size: 18px;
+		color: #8892a8;
+		margin: 16px 0 8px;
+	}
+
+	p {
+		font-size: 14px;
+		margin: 0;
+	}
+}
+
+.empty-icon {
+	font-size: 48px;
+	color: #2e3142;
+}
+
+.pagination-bar {
+	display: flex;
+	justify-content: flex-end;
+	margin-top: 24px;
+}
+</style>
