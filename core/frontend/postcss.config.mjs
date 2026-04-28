@@ -1,6 +1,7 @@
 import tailwindcss from 'tailwindcss'
 import autoprefixer from 'autoprefixer'
+import UnoCSS from 'unocss/postcss'
 
 export default {
-	plugins: [tailwindcss(), autoprefixer()],
+	plugins: [UnoCSS(), tailwindcss(), autoprefixer()],
 }

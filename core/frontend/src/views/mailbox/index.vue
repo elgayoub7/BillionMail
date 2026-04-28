@@ -33,25 +33,11 @@
 						@update:value="val => handleStatusChange(row, val)" />
 				</div>
 
-				<!-- Health Score -->
+				<!-- Status -->
 				<div class="health-section">
 					<div class="health-header">
-						<span class="health-label">Health Score</span>
-						<span class="health-value" :class="getHealthClass(85)">{{ getHealthLabel(85) }}</span>
-					</div>
-					<div class="health-bar">
-						<div class="health-fill" :style="{ width: '85%' }"></div>
-					</div>
-				</div>
-
-				<!-- Daily Limit -->
-				<div class="daily-section">
-					<div class="daily-header">
-						<span class="daily-label">Daily Sending</span>
-						<span class="daily-value">-- / 200</span>
-					</div>
-					<div class="daily-bar">
-						<div class="daily-fill" :style="{ width: '0%' }"></div>
+						<span class="health-label">Status</span>
+						<span class="health-value" :class="row.active ? 'health-good' : 'health-bad'">{{ row.active ? 'Active' : 'Inactive' }}</span>
 					</div>
 				</div>
 

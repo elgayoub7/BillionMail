@@ -94,7 +94,8 @@ const menuGroups = computed<MenuGroup[]>(() => [
 	{
 		label: 'ANALYTICS',
 		items: [
-			{ key: 'logs', label: 'Analytics', icon: 'i-mdi:chart-areaspline', route: '/logs' },
+			{ key: 'analytics', label: 'Analytics', icon: 'i-mdi:chart-areaspline', route: '/analytics' },
+			{ key: 'logs', label: 'Activity Log', icon: 'i-mdi:text-box-outline', route: '/logs' },
 			{ key: 'domain', label: 'Domains', icon: 'i-mdi:dns-outline', route: '/domain' },
 			{ key: 'mailbox', label: 'Mailboxes', icon: 'i-mdi:email-fast-outline', route: '/mailbox' },
 		],

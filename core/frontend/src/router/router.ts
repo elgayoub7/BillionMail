@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
-import { is, isDev } from '@/utils'
+import { isDev } from '@/utils'
 
 // Routes reflect list
 const routesReflectList = [
@@ -18,32 +18,59 @@ const routesReflectList = [
 	'Settings',
 	'Automation',
 	'Video Outreach',
+	'Analytics',
 ]
 
-// Import routes from modules
-const modules = import.meta.webpackContext('./modules', {
-	// Whether to search for subdirectories
-	recursive: false,
-	regExp: /^[^.]+\.ts$/,
-})
+// Explicitly import route modules (import.meta.glob/webpackContext broken by source.define)
+import overview from './modules/overview'
+import coldDashboard from './modules/cold-dashboard'
+import sequences from './modules/sequences'
+import template from './modules/template'
+import contacts from './modules/contacts'
+import mailbox from './modules/mailbox'
+import domain from './modules/domain'
+import smtp from './modules/smtp'
+import logs from './modules/logs'
+import settings from './modules/settings'
+import api from './modules/api'
+import automation from './modules/automation'
+import inbox from './modules/inbox'
+import domainHealth from './modules/domain-health'
+import scoring from './modules/scoring'
+import videoOutreach from './modules/video-outreach'
+import analytics from './modules/analytics'
+import market from './modules/market'
+
+const allModules: RouteRecordRaw[] = [
+	overview,
+	coldDashboard,
+	sequences,
+	template,
+	contacts,
+	mailbox,
+	domain,
+	smtp,
+	logs,
+	settings,
+	api,
+	automation,
+	inbox,
+	domainHealth,
+	scoring,
+	videoOutreach,
+	analytics,
+	market,
+]
 
 // Module routes
-export let menuList: RouteRecordRaw[] = []
-
-// Iterate through the module list to generate module routes
-for (const path of modules.keys()) {
-	const mod = modules(path)
-	if (is<{ default: RouteRecordRaw }>(mod, 'Module')) {
-		menuList.push(mod.default)
-	}
-}
+export let menuList: RouteRecordRaw[] = allModules.filter(Boolean)
 
 // Sort module routes
 menuList = menuList.reduce((p: RouteRecordRaw[], v: RouteRecordRaw) => {
-	const routeIndex = routesReflectList.findIndex(item => item == v.meta!.title)
-	p[routeIndex] = v
+	const routeIndex = routesReflectList.findIndex(item => item == v.meta?.title)
+	if (routeIndex >= 0) p[routeIndex] = v
 	return p
-}, [] as RouteRecordRaw[])
+}, [] as RouteRecordRaw[]).filter(Boolean) as RouteRecordRaw[]
 
 const otherArray: RouteRecordRaw[] = []
 

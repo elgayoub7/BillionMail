@@ -1,5 +1,5 @@
 <template>
-	<div class="app-header" :style="{ top: `${top}px` }">
+	<div class="app-header">
 		<div class="header-left">
 			<n-button class="icon-btn" :bordered="false" @click="$emit('toggleSidebar')">
 				<i class="icon" :class="isCollapse ? 'i-mdi:menu-open' : 'i-mdi:menu-close'"></i>
@@ -25,13 +25,6 @@ import { storeToRefs } from 'pinia'
 import { DropdownOption } from 'naive-ui'
 import { useUserStore, useGlobalStore, useThemeStore } from '@/store'
 import InstanceSwitcher from './InstanceSwitcher.vue'
-
-defineProps({
-	top: {
-		type: Number,
-		default: 0,
-	},
-})
 
 defineEmits(['toggleSidebar'])
 
@@ -64,7 +57,7 @@ const handleUserAction = (key: string) => {
 
 <style lang="scss" scoped>
 .app-header {
-	position: absolute;
+	position: sticky;
 	top: 0;
 	left: 0;
 	right: 0;

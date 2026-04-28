@@ -2,9 +2,11 @@
 	<div class="app-layout">
 		<sidebar></sidebar>
 		<div class="app-main-wrapper" :style="{ marginLeft: isCollapse ? '64px' : '240px' }">
-			<div class="app-content-scroll" :style="{ paddingTop: '48px' }" @scroll="handleScroll">
-				<app-header :top="scrollTop" @toggle-sidebar="handleToggleSidebar"></app-header>
-				<app-main></app-main>
+			<div class="app-content-scroll">
+				<app-header @toggle-sidebar="handleToggleSidebar"></app-header>
+				<div class="page-container">
+					<app-main></app-main>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -17,12 +19,6 @@ import { useGlobalStore } from '@/store'
 
 const globalStore = useGlobalStore()
 const { isCollapse } = storeToRefs(globalStore)
-
-const scrollTop = ref(0)
-
-const handleScroll = (e: Event) => {
-	scrollTop.value = (e.target as HTMLElement).scrollTop || 0
-}
 
 const handleToggleSidebar = () => {
 	globalStore.setCollapse()
@@ -48,5 +44,11 @@ const handleToggleSidebar = () => {
 	height: 100%;
 	overflow-y: auto;
 	overflow-x: hidden;
+	background: #0f1117;
+}
+
+.page-container {
+	max-width: 1440px;
+	margin: 0 auto;
 }
 </style>
