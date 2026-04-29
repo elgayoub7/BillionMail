@@ -119,6 +119,10 @@ const menuGroups = computed<MenuGroup[]>(() => [
 	transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 	flex-shrink: 0;
 	overflow: hidden;
+	position: fixed;
+	left: 0;
+	top: 0;
+	z-index: 100;
 
 	&.collapsed {
 		width: 64px;

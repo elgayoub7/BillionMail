@@ -12,6 +12,7 @@ const app = createApp(App)
 app.use(i18n)
 app.use(pinia)
 app.use(router)
-app.mount('#root')
+// Ensure SafePath session is set before any API calls
+fetch('/').then(() => app.mount('#root'))
 
 export { app }
