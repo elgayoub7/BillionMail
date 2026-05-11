@@ -29,6 +29,7 @@ import (
 	"billionmail-core/internal/controller/scoring"
 	"billionmail-core/internal/controller/domainhealth"
 	"billionmail-core/internal/controller/dashboard"
+	"billionmail-core/internal/controller/deliverability"
 	"billionmail-core/internal/service/database_initialization"
 	docker "billionmail-core/internal/service/dockerapi"
 	"billionmail-core/internal/service/maillog_stat"
@@ -331,6 +332,7 @@ var (
 					scoring.NewV1(),
 					domainhealth.NewV1(),
 					dashboard.NewV1(),
+					deliverability.NewV1(),
 				)
 			})
 
