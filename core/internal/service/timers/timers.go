@@ -16,6 +16,7 @@ import (
 	"billionmail-core/internal/service/sequence"
 	"billionmail-core/internal/service/video_gen"
 	"billionmail-core/internal/service/abtest"
+	"billionmail-core/internal/service/deliverability"
 	"billionmail-core/internal/service/bounce"
 	"billionmail-core/internal/service/domainhealth"
 	"billionmail-core/internal/service/warmup"
@@ -244,6 +245,10 @@ func Start(ctx context.Context) (err error) {
 	gtimer.Add(24*time.Hour, func() {
 		log_maintenance.CompressAndCleanupLogs(ctx)
 	})
+
+	// Inbox Placement Testing — 15 min interval
+	deliverabilitySvc := deliverability.NewInboxPlacementService()
+	deliverabilitySvc.StartTimer()
 
 	g.Log().Debug(ctx, "All timers started successfully")
 	return nil
