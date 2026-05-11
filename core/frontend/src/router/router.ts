@@ -40,6 +40,7 @@ import scoring from './modules/scoring'
 import videoOutreach from './modules/video-outreach'
 import analytics from './modules/analytics'
 import market from './modules/market'
+import deliverability from './modules/deliverability'
 
 const allModules: RouteRecordRaw[] = [
 	overview,
@@ -60,6 +61,7 @@ const allModules: RouteRecordRaw[] = [
 	videoOutreach,
 	analytics,
 	market,
+	deliverability,
 ]
 
 // Module routes
