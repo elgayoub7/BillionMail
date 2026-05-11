@@ -3,6 +3,7 @@ package sequence
 import (
 	"bufio"
 	"context"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -120,6 +121,26 @@ func scanMaildir(ctx context.Context, emailAddr string) {
 						"UPDATE bm_sequence_steps SET replied_count = replied_count + 1 WHERE id = ?",
 						stepId.Int())
 				}
+			}
+
+			// Inbox Placement detection — check if this is a test email
+			if strings.HasPrefix(cleanID, "BM-INBOX-TEST-") {
+				filePath := filepath.Join(dir, name)
+				fi, err := os.Stat(filePath)
+				if err == nil {
+					// Update placement to 'inbox'
+					_, err = g.DB().Model("bm_inbox_placement_results").
+						Where("test_email_message_id", cleanID).
+						Data(g.Map{
+							"received_at": fi.ModTime(),
+							"placement":   "inbox",
+						}).
+						Update()
+					if err != nil {
+						log.Printf("[InboxPlacement] Failed to update placement for %s: %v", cleanID, err)
+					}
+				}
+				continue // Don't count as a reply for sequence purposes
 			}
 
 			// Mark as seen by renaming with :S flag
