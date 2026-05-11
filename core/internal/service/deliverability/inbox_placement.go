@@ -7,8 +7,7 @@ import (
 	"time"
 
 	"github.com/gogf/gf/v2/frame/g"
-	"github.com/gogf/gf/v2/frame/gctx"
-	"github.com/gogf/gf/v2/os/gtimer"
+	"github.com/gogf/gf/os/gtimer"
 	"github.com/google/uuid"
 )
 
@@ -20,18 +19,16 @@ type InboxPlacementService struct {
 func NewInboxPlacementService() *InboxPlacementService {
 	return &InboxPlacementService{
 		seedList: NewSeedListService(),
-		ctx:      gctx.GetIOContext(),
+		ctx:      context.Background(),
 	}
 }
 
-// StartTimer registers the 15-minute inbox placement test timer
 func (s *InboxPlacementService) StartTimer() {
-	gtimer.Add(15*time.Minute, func(ctx context.Context) {
-		s.RunPlacementTests(ctx)
+	gtimer.Add(15*time.Minute, func() {
+		s.RunPlacementTests(s.ctx)
 	})
 }
 
-// RunPlacementTests sends test emails to all active seeds from all active senders
 func (s *InboxPlacementService) RunPlacementTests(ctx context.Context) error {
 	seeds, err := s.seedList.GetActiveSeeds(ctx)
 	if err != nil || len(seeds) == 0 {
@@ -39,36 +36,32 @@ func (s *InboxPlacementService) RunPlacementTests(ctx context.Context) error {
 	}
 
 	var senders []struct {
-		Id       int    `json:"id"`
-		Username string `json:"username"`
-		Email    string `json:"email"`
+		Id    int    `json:"id"`
+		Email string `json:"email"`
 	}
-	err = g.DB().Model("bm_sender_pool").
-		Where("status", "active").
+	err = g.DB().Model("bm_sender_config").
+		Where("is_active", 1).
 		Scan(&senders)
 	if err != nil {
 		return err
 	}
 
 	for _, sender := range senders {
-		s.sendTestEmailsForSender(ctx, sender.Id, sender.Username, sender.Email, seeds)
+		s.sendTestEmailsForSender(ctx, sender.Id, sender.Email, seeds)
 	}
 	return nil
 }
 
-// sendTestEmailsForSender sends one test email per seed for a given sender
-// message_id format: BM-INBOX-TEST-{uuid}
-func (s *InboxPlacementService) sendTestEmailsForSender(ctx context.Context, senderId int, senderUsername, senderEmail string, seeds []SeedEmail) error {
+func (s *InboxPlacementService) sendTestEmailsForSender(ctx context.Context, senderId int, senderEmail string, seeds []SeedEmail) error {
 	for _, seed := range seeds {
 		messageId := fmt.Sprintf("BM-INBOX-TEST-%s", uuid.New().String())
-		subject := fmt.Sprintf("BM-INBOX-TEST-%s", uuid.New().String()[:8])
 
 		_, err := g.DB().Model("bm_inbox_placement_results").
-			Data(g.Map{
-				"sender_pool_id":       senderId,
+			Data(map[string]interface{}{
+				"sender_config_id":     senderId,
 				"seed_email":           seed.Email,
 				"test_email_message_id": messageId,
-				"sent_at":               time.Now(),
+				"sent_at":              time.Now(),
 				"placement":            "none",
 			}).
 			Insert()
@@ -76,14 +69,12 @@ func (s *InboxPlacementService) sendTestEmailsForSender(ctx context.Context, sen
 			continue
 		}
 
-		// Log the test email that would be sent
 		fmt.Printf("[InboxPlacement] TEST sender=%s seed=%s message_id=%s\n",
-			senderUsername, seed.Email, messageId)
+			senderEmail, seed.Email, messageId)
 	}
 	return nil
 }
 
-// UpdatePlacementFromReply processes a reply from Maildir scanner and updates placement
 func (s *InboxPlacementService) UpdatePlacementFromReply(ctx context.Context, messageId string, receivedAt time.Time) error {
 	if !strings.HasPrefix(messageId, "BM-INBOX-TEST-") {
 		return nil
@@ -91,7 +82,7 @@ func (s *InboxPlacementService) UpdatePlacementFromReply(ctx context.Context, me
 
 	_, err := g.DB().Model("bm_inbox_placement_results").
 		Where("test_email_message_id", messageId).
-		Data(g.Map{
+		Data(map[string]interface{}{
 			"received_at": receivedAt,
 			"placement":   "inbox",
 		}).
@@ -99,12 +90,11 @@ func (s *InboxPlacementService) UpdatePlacementFromReply(ctx context.Context, me
 	return err
 }
 
-// CalculateScore computes inbox_rate for a sender over a rolling window (default 30 days)
-func (s *InboxPlacementService) CalculateScore(ctx context.Context, senderPoolId int, windowDays int) (int, string, error) {
+func (s *InboxPlacementService) CalculateScore(ctx context.Context, senderConfigId int, windowDays int) (int, string, error) {
 	cutoff := time.Now().AddDate(0, 0, -windowDays)
 
 	total, err := g.DB().Model("bm_inbox_placement_results").
-		Where("sender_pool_id", senderPoolId).
+		Where("sender_config_id", senderConfigId).
 		Where("sent_at > ?", cutoff).
 		Count()
 	if err != nil {
@@ -115,7 +105,7 @@ func (s *InboxPlacementService) CalculateScore(ctx context.Context, senderPoolId
 	}
 
 	inboxCount, err := g.DB().Model("bm_inbox_placement_results").
-		Where("sender_pool_id", senderPoolId).
+		Where("sender_config_id", senderConfigId).
 		Where("sent_at > ?", cutoff).
 		Where("placement", "inbox").
 		Count()
@@ -134,15 +124,13 @@ func (s *InboxPlacementService) CalculateScore(ctx context.Context, senderPoolId
 	return rate, status, nil
 }
 
-// GetAllScores returns scores for all active senders
 func (s *InboxPlacementService) GetAllScores(ctx context.Context) ([]map[string]interface{}, error) {
 	var senders []struct {
-		Id       int    `json:"id"`
-		Username string `json:"username"`
-		Email    string `json:"email"`
+		Id    int    `json:"id"`
+		Email string `json:"email"`
 	}
-	err := g.DB().Model("bm_sender_pool").
-		Where("status", "active").
+	err := g.DB().Model("bm_sender_config").
+		Where("is_active", 1).
 		Scan(&senders)
 	if err != nil {
 		return nil, err
@@ -153,7 +141,6 @@ func (s *InboxPlacementService) GetAllScores(ctx context.Context) ([]map[string]
 		rate, status, _ := s.CalculateScore(ctx, sender.Id, 30)
 		results = append(results, map[string]interface{}{
 			"sender_id":  sender.Id,
-			"username":   sender.Username,
 			"email":      sender.Email,
 			"inbox_rate": rate,
 			"status":     status,
@@ -163,10 +150,10 @@ func (s *InboxPlacementService) GetAllScores(ctx context.Context) ([]map[string]
 	return results, nil
 }
 
-func (s *InboxPlacementService) getLastTestTime(ctx context.Context, senderPoolId int) *time.Time {
+func (s *InboxPlacementService) getLastTestTime(ctx context.Context, senderConfigId int) *time.Time {
 	var lastSent time.Time
-	err := g.DB().Model("bm_inbox_placement_results").
-		Where("sender_pool_id", senderPoolId).
+	_, err := g.DB().Model("bm_inbox_placement_results").
+		Where("sender_config_id", senderConfigId).
 		Order("sent_at DESC").
 		Value("sent_at", &lastSent)
 	if err != nil {

@@ -8,116 +8,129 @@ import (
 	"github.com/gogf/gf/v2/frame/g"
 )
 
-// SeedEmail represents a seed email for inbox placement testing
+type Controller struct{}
+
 type SeedEmail struct {
 	Email    string `json:"email"`
-	Provider string `json:"provider"` // gmail, outlook, yahoo, icloud
+	Provider string `json:"provider"`
 	Active   bool   `json:"active"`
 }
 
-// --- Request types ---
-
 type ListSeedsReq struct {
-	g.Meta        `path:"/deliverability/seeds" method:"get" tags:"Deliverability" summary:"List seed emails"`
-	Authorization string `json:"authorization" in:"header"`
+	g.Meta `path:"/deliverability/seeds" method:"get" tags:"Deliverability" summary:"List seed emails"`
 }
 
 type ListSeedsRes struct {
 	api_v1.StandardRes
 	Data struct {
 		Seeds []SeedEmail `json:"seeds"`
-	} `json:"data"`
+	}
 }
 
 type AddSeedReq struct {
-	g.Meta        `path:"/deliverability/seeds" method:"post" tags:"Deliverability" summary:"Add seed email"`
-	Authorization string `json:"authorization" in:"header"`
-	Email         string `json:"email" v:"required|email" dc:"Seed email address"`
-	Provider     string `json:"provider" v:"required|in:gmail,outlook,yahoo,icloud" dc:"Email provider"`
+	g.Meta   `path:"/deliverability/seeds" method:"post" tags:"Deliverability" summary:"Add seed email"`
+	Email    string `json:"email" v:"required|email"`
+	Provider string `json:"provider" v:"required|in:gmail,outlook,yahoo,icloud"`
 }
 
 type AddSeedRes struct {
 	api_v1.StandardRes
+	Message string `json:"message"`
 }
 
 type RemoveSeedReq struct {
-	g.Meta        `path:"/deliverability/seeds" method:"delete" tags:"Deliverability" summary:"Remove seed email"`
-	Authorization string `json:"authorization" in:"header"`
-	Email         string `json:"email" v:"required|email" dc:"Seed email address"`
+	g.Meta `path:"/deliverability/seeds" method:"delete" tags:"Deliverability" summary:"Remove seed email"`
+	Email  string `json:"email" v:"required|email"`
 }
 
 type RemoveSeedRes struct {
 	api_v1.StandardRes
+	Message string `json:"message"`
 }
 
 type GetScoresReq struct {
-	g.Meta        `path:"/deliverability/scores" method:"get" tags:"Deliverability" summary:"Get inbox placement scores"`
-	Authorization string `json:"authorization" in:"header"`
+	g.Meta `path:"/deliverability/scores" method:"get" tags:"Deliverability" summary:"Get inbox placement scores"`
 }
 
 type GetScoresRes struct {
 	api_v1.StandardRes
 	Data struct {
 		Scores []map[string]interface{} `json:"scores"`
-	} `json:"data"`
+	}
 }
 
 type TriggerTestReq struct {
-	g.Meta        `path:"/deliverability/trigger-test" method:"post" tags:"Deliverability" summary:"Trigger inbox placement test"`
-	Authorization string `json:"authorization" in:"header"`
+	g.Meta `path:"/deliverability/trigger-test" method:"post" tags:"Deliverability" summary:"Trigger inbox placement test"`
 }
 
 type TriggerTestRes struct {
 	api_v1.StandardRes
+	Message string `json:"message"`
 }
 
-// --- Controller ---
+type ControllerV1 struct{}
 
-type Controller struct{}
+func NewV1() *ControllerV1 {
+	return &ControllerV1{}
+}
 
-func (c *Controller) ListSeeds(ctx context.Context, req *ListSeedsReq, res *ListSeedsRes) error {
+func (c *ControllerV1) ListSeeds(ctx context.Context, req *ListSeedsReq) (res *ListSeedsRes, err error) {
+	res = &ListSeedsRes{}
 	svc := deliverability.NewSeedListService()
 	seeds, err := svc.GetSeeds(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	res.Data.Seeds = seeds
-	return nil
+	for _, seed := range seeds {
+		res.Data.Seeds = append(res.Data.Seeds, SeedEmail{
+			Email:    seed.Email,
+			Provider: seed.Provider,
+			Active:   seed.Active,
+		})
+	}
+	return res, nil
 }
 
-func (c *Controller) AddSeed(ctx context.Context, req *AddSeedReq, res *AddSeedRes) error {
+func (c *ControllerV1) AddSeed(ctx context.Context, req *AddSeedReq) (res *AddSeedRes, err error) {
+	res = &AddSeedRes{}
 	svc := deliverability.NewSeedListService()
-	err := svc.AddSeed(ctx, req.Email, req.Provider)
+	err = svc.AddSeed(ctx, req.Email, req.Provider)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	res.Message = "Seed added"
+	return res, nil
 }
 
-func (c *Controller) RemoveSeed(ctx context.Context, req *RemoveSeedReq, res *RemoveSeedRes) error {
+func (c *ControllerV1) RemoveSeed(ctx context.Context, req *RemoveSeedReq) (res *RemoveSeedRes, err error) {
+	res = &RemoveSeedRes{}
 	svc := deliverability.NewSeedListService()
-	err := svc.RemoveSeed(ctx, req.Email)
+	err = svc.RemoveSeed(ctx, req.Email)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	res.Message = "Seed removed"
+	return res, nil
 }
 
-func (c *Controller) GetScores(ctx context.Context, req *GetScoresReq, res *GetScoresRes) error {
+func (c *ControllerV1) GetScores(ctx context.Context, req *GetScoresReq) (res *GetScoresRes, err error) {
+	res = &GetScoresRes{}
 	svc := deliverability.NewInboxPlacementService()
 	scores, err := svc.GetAllScores(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	res.Data.Scores = scores
-	return nil
+	return res, nil
 }
 
-func (c *Controller) TriggerTest(ctx context.Context, req *TriggerTestReq, res *TriggerTestRes) error {
+func (c *ControllerV1) TriggerTest(ctx context.Context, req *TriggerTestReq) (res *TriggerTestRes, err error) {
+	res = &TriggerTestRes{}
 	svc := deliverability.NewInboxPlacementService()
-	err := svc.RunPlacementTests(ctx)
+	err = svc.RunPlacementTests(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	res.Message = "Test triggered"
+	return res, nil
 }
